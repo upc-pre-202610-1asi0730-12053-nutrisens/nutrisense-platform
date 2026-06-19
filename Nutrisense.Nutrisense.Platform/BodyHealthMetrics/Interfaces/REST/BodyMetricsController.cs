@@ -128,4 +128,17 @@ public class BodyMetricsController(
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
+
+    [HttpGet("by-user/{userId:int}")]
+    [SwaggerOperation(
+        Summary = "Get body metrics by user ID",
+        Description = "Retrieves the complete body metrics profile for a user, including biometrics and computed health values.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetByUserId(int userId)
+    {
+        var bodyMetrics = await queryService.Handle(new GetBodyMetricsByUserIdQuery(userId));
+        return bodyMetrics is null ? Ok((object?)null) : Ok(BodyMetricsResourceAssembler.ToResource(bodyMetrics));
+    }
 }
