@@ -25,6 +25,17 @@ public class UsersController(
     IUserQueryService queryService,
     IStringLocalizer<SharedResource> localizer) : ControllerBase
 {
+    [HttpGet("{id:int}")]
+    [SwaggerOperation(Summary = "Get user by ID", Description = "Returns the user profile for the specified user ID.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var user = await queryService.Handle(new GetUserByIdQuery(new UserId(id)));
+        return user is null ? NotFound() : Ok(UserResourceAssembler.ToResource(user));
+    }
+
     [HttpPut("{id:int}/health-goal")]
     [SwaggerOperation(Summary = "Set user health goal", Description = "Updates the user's health goal/intent for nutrition tracking.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
