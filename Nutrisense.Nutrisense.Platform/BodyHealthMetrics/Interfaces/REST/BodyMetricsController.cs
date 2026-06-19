@@ -104,4 +104,28 @@ public class BodyMetricsController(
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
+
+    [HttpPut("{userId:int}/health-goal")]
+    [SwaggerOperation(
+        Summary = "Set a health goal for a user",
+        Description = "Sets a new weight goal with target and weekly rate. Returns updated body metrics with adjusted caloric values.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetHealthGoal(int userId, [FromBody] SetHealthGoalResource resource)
+    {
+        var command = SetHealthGoalCommandAssembler.ToCommand(userId, resource);
+        var result = await commandService.Handle(command);
+        return result switch
+        {
+            Result<BodyMetrics, SetHealthGoalError>.Success s =>
+                Ok(BodyMetricsResourceAssembler.ToResource(s.Value)),
+            Result<BodyMetrics, SetHealthGoalError>.Failure { Error: SetHealthGoalError.BodyMetricsNotFound } =>
+                NotFound(),
+            Result<BodyMetrics, SetHealthGoalError>.Failure { Error: SetHealthGoalError.InvalidData } =>
+                BadRequest("Invalid goal data."),
+            _ => StatusCode(StatusCodes.Status500InternalServerError)
+        };
+    }
 }
