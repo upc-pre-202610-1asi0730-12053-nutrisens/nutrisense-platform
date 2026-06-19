@@ -49,4 +49,17 @@ public class UsersController(
         var result = await commandService.Handle(command);
         return SetDietaryRestrictionsResultAssembler.ToActionResult(result, localizer);
     }
+
+    [HttpPut("{id:int}/profile")]
+    [SwaggerOperation(Summary = "Update user profile", Description = "Updates profile information including name, date of birth, physical measurements, and preferences.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateProfile(int id, [FromBody] UpdateProfileResource resource)
+    {
+        var command = UpdateProfileCommandAssembler.ToCommand(new UserId(id), resource);
+        var result = await commandService.Handle(command);
+        return UpdateProfileResultAssembler.ToActionResult(result, localizer);
+    }
 }
