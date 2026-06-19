@@ -30,4 +30,16 @@ public class AuthenticationController(
         var result = await commandService.Handle(command);
         return RegisterUserResultAssembler.ToActionResult(result, localizer);
     }
+
+    [HttpPost("sign-in")]
+    [SwaggerOperation(Summary = "Authenticate user", Description = "Verifies credentials and returns authentication token and session ID.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SignIn([FromBody] LoginUserResource resource)
+    {
+        var command = LoginUserCommandAssembler.ToCommand(resource);
+        var result = await commandService.Handle(command);
+        return LoginUserResultAssembler.ToActionResult(result, localizer);
+    }
 }
