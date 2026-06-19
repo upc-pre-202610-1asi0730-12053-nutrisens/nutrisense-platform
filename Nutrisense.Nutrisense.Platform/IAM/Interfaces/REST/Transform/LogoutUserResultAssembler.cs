@@ -1,0 +1,23 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
+using Nutrisense.Nutrisense.Platform.IAM.Application.Errors;
+using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
+using Nutrisense.Nutrisense.Platform.Shared.Resources;
+
+namespace Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Transform;
+
+public static class LogoutUserResultAssembler
+{
+    public static IActionResult ToActionResult(
+        Result<bool, LogoutUserError> result,
+        IStringLocalizer<SharedResource> localizer) =>
+        result switch
+        {
+            Result<bool, LogoutUserError>.Success => new NoContentResult(),
+            Result<bool, LogoutUserError>.Failure { Error: LogoutUserError.SessionNotFound } =>
+                new NotFoundObjectResult(new { message = localizer["SessionNotFound"].Value }),
+            _ =>
+                new ObjectResult(new { message = localizer["UnexpectedError"].Value })
+                    { StatusCode = StatusCodes.Status500InternalServerError }
+        };
+}

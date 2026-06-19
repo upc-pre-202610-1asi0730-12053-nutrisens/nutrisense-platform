@@ -4,6 +4,18 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.IdentityModel.Tokens;
+// IAM BC
+using Nutrisense.Nutrisense.Platform.IAM.Application.Acl;
+using Nutrisense.Nutrisense.Platform.IAM.Interfaces.Acl;
+using Nutrisense.Nutrisense.Platform.IAM.Application.Internal.CommandServices;
+using Nutrisense.Nutrisense.Platform.IAM.Application.Internal.QueryServices;
+using Nutrisense.Nutrisense.Platform.IAM.Application.CommandServices;
+using Nutrisense.Nutrisense.Platform.IAM.Application.QueryServices;
+using Nutrisense.Nutrisense.Platform.IAM.Domain.Repositories;
+using Nutrisense.Nutrisense.Platform.IAM.Domain.Services;
+using Nutrisense.Nutrisense.Platform.IAM.Infrastructure.Hashing.BCrypt;
+using Nutrisense.Nutrisense.Platform.IAM.Infrastructure.Persistence.EFC.Repositories;
+using Nutrisense.Nutrisense.Platform.IAM.Infrastructure.Tokens.JWT;
 // Shared
 using Nutrisense.Nutrisense.Platform.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Repositories;
@@ -143,6 +155,14 @@ builder.Services.AddCortexMediator(new[] { typeof(Program) });
 
 // Shared Bounded Context Injection Configuration
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// IAM Bounded Context
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IHashingService, BCryptHashingService>();
+builder.Services.AddScoped<ITokenService, JwtTokenService>();
+builder.Services.AddScoped<IUserCommandService, UserCommandService>();
+builder.Services.AddScoped<IUserQueryService, UserQueryService>();
+builder.Services.AddScoped<IIamContextFacade, IamContextFacade>();
 
 var app = builder.Build();
 
