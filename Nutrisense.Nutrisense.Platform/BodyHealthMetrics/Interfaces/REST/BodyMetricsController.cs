@@ -156,4 +156,24 @@ public class BodyMetricsController(
         if (bodyMetrics.BmiValue is null || bodyMetrics.BmiCategory is null) return NotFound("BMI has not been calculated yet.");
         return Ok(new BmiResource(bodyMetrics.BmiValue.Value, bodyMetrics.BmiCategory));
     }
+
+    [HttpGet("{userId:int}/daily-caloric-goal")]
+    [SwaggerOperation(
+        Summary = "Get the daily caloric goal",
+        Description = "Returns daily caloric target and macronutrient breakdown (protein, carbs, fat, fiber) in grams.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDailyCaloricGoal(int userId)
+    {
+        var bodyMetrics = await queryService.Handle(new GetBodyMetricsByUserIdQuery(userId));
+        if (bodyMetrics is null) return NotFound();
+        if (bodyMetrics.MacroCalories is null) return NotFound("Daily caloric goal has not been calculated yet.");
+        return Ok(new DailyCaloricGoalResource(
+            bodyMetrics.MacroCalories.Value,
+            bodyMetrics.MacroProteinG!.Value,
+            bodyMetrics.MacroCarbsG!.Value,
+            bodyMetrics.MacroFatG!.Value,
+            bodyMetrics.MacroFiberG!.Value));
+    }
 }
