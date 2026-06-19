@@ -62,4 +62,15 @@ public class UsersController(
         var result = await commandService.Handle(command);
         return UpdateProfileResultAssembler.ToActionResult(result, localizer);
     }
+
+    [HttpDelete("{id:int}")]
+    [SwaggerOperation(Summary = "Delete user account", Description = "Permanently removes the user account and all associated data.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteUser(int id)
+    {
+        var result = await commandService.Handle(new DeleteUserCommand(new UserId(id)));
+        return DeleteUserResultAssembler.ToActionResult(result, localizer);
+    }
 }
