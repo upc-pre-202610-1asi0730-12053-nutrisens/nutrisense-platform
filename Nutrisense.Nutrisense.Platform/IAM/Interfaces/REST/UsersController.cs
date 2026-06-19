@@ -37,4 +37,16 @@ public class UsersController(
         var result = await commandService.Handle(command);
         return SetHealthGoalResultAssembler.ToActionResult(result, localizer);
     }
+
+    [HttpPut("{id:int}/dietary-restrictions")]
+    [SwaggerOperation(Summary = "Set dietary restrictions", Description = "Replaces all dietary restrictions with the provided list.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetDietaryRestrictions(int id, [FromBody] SetDietaryRestrictionsResource resource)
+    {
+        var command = SetDietaryRestrictionsCommandAssembler.ToCommand(new UserId(id), resource);
+        var result = await commandService.Handle(command);
+        return SetDietaryRestrictionsResultAssembler.ToActionResult(result, localizer);
+    }
 }
