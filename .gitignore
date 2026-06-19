@@ -1,0 +1,41 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# NuGet
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Rider / ReSharper
+_ReSharper*/
+*.DotSettings.user
+
+# dotnet tools
+.dotnet/
+
+# Environment / secrets
+.env
+.env.*
+appsettings.Development.json
+appsettings.*.local.json
+secrets.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
