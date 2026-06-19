@@ -176,4 +176,20 @@ public class BodyMetricsController(
             bodyMetrics.MacroFatG!.Value,
             bodyMetrics.MacroFiberG!.Value));
     }
+
+    [HttpGet("{userId:int}/weight-history")]
+    [SwaggerOperation(
+        Summary = "Get weight history for a user",
+        Description = "Returns paginated weight log entries within optional date range (from/to in ISO 8601 format).")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetWeightHistory(
+        int userId,
+        [FromQuery] DateTimeOffset? from,
+        [FromQuery] DateTimeOffset? to)
+    {
+        var logs = await queryService.Handle(new GetWeightHistoryByUserIdQuery(userId, from, to));
+        return Ok(logs.Select(WeightLogResourceAssembler.ToResource));
+    }
 }
