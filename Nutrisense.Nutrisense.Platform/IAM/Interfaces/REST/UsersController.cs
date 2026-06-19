@@ -36,6 +36,17 @@ public class UsersController(
         return user is null ? NotFound() : Ok(UserResourceAssembler.ToResource(user));
     }
 
+    [HttpGet("by-email")]
+    [SwaggerOperation(Summary = "Get user by email", Description = "Returns the user profile for the specified email address.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetByEmail([FromQuery] string email)
+    {
+        var user = await queryService.Handle(new GetUserByEmailQuery(email));
+        return user is null ? NotFound() : Ok(UserResourceAssembler.ToResource(user));
+    }
+
     [HttpPut("{id:int}/health-goal")]
     [SwaggerOperation(Summary = "Set user health goal", Description = "Updates the user's health goal/intent for nutrition tracking.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
