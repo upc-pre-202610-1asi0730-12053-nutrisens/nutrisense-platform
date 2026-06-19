@@ -56,4 +56,28 @@ public class BodyMetricsController(
             return BadRequest(ex.Message);
         }
     }
+
+    [HttpPut("{userId:int}/weight")]
+    [SwaggerOperation(
+        Summary = "Update weight for a user",
+        Description = "Updates current weight and optional note. Returns updated body metrics with recalculated BMI and TDEE.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateWeight(int userId, [FromBody] UpdateWeightResource resource)
+    {
+        var command = UpdateWeightCommandAssembler.ToCommand(userId, resource);
+        var result = await commandService.Handle(command);
+        return result switch
+        {
+            Result<BodyMetrics, UpdateWeightError>.Success s =>
+                Ok(BodyMetricsResourceAssembler.ToResource(s.Value)),
+            Result<BodyMetrics, UpdateWeightError>.Failure { Error: UpdateWeightError.BodyMetricsNotFound } =>
+                NotFound(),
+            Result<BodyMetrics, UpdateWeightError>.Failure { Error: UpdateWeightError.InvalidData } =>
+                BadRequest("Invalid weight value."),
+            _ => StatusCode(StatusCodes.Status500InternalServerError)
+        };
+    }
 }
