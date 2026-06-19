@@ -141,4 +141,19 @@ public class BodyMetricsController(
         var bodyMetrics = await queryService.Handle(new GetBodyMetricsByUserIdQuery(userId));
         return bodyMetrics is null ? Ok((object?)null) : Ok(BodyMetricsResourceAssembler.ToResource(bodyMetrics));
     }
+
+    [HttpGet("{userId:int}/bmi")]
+    [SwaggerOperation(
+        Summary = "Get the current BMI for a user",
+        Description = "Returns the user's current BMI value and WHO weight-status category (Underweight, Normal, Overweight, Obese).")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetBmi(int userId)
+    {
+        var bodyMetrics = await queryService.Handle(new GetBodyMetricsByUserIdQuery(userId));
+        if (bodyMetrics is null) return NotFound();
+        if (bodyMetrics.BmiValue is null || bodyMetrics.BmiCategory is null) return NotFound("BMI has not been calculated yet.");
+        return Ok(new BmiResource(bodyMetrics.BmiValue.Value, bodyMetrics.BmiCategory));
+    }
 }
