@@ -23,6 +23,16 @@ public class SessionsController(
     IUserQueryService queryService,
     IStringLocalizer<SharedResource> localizer) : ControllerBase
 {
+    [HttpGet]
+    [SwaggerOperation(Summary = "List user sessions", Description = "Returns all active and inactive sessions for the authenticated user.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetSessions(int userId)
+    {
+        var sessions = await queryService.Handle(new GetAllSessionsByUserIdQuery(new UserId(userId)));
+        return Ok(sessions.Select(SessionResourceAssembler.ToResource).ToArray());
+    }
+
     [HttpPost("{sessionId:int}/logout")]
     [SwaggerOperation(Summary = "Logout from session", Description = "Terminates a specific session, invalidating its authentication token.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
