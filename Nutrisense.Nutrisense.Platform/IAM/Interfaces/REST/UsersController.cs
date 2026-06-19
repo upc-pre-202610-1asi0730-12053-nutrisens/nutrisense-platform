@@ -95,4 +95,14 @@ public class UsersController(
         var result = await commandService.Handle(new DeleteUserCommand(new UserId(id)));
         return DeleteUserResultAssembler.ToActionResult(result, localizer);
     }
+
+    [HttpGet("{id:int}/dietary-restrictions")]
+    [SwaggerOperation(Summary = "List dietary restrictions", Description = "Returns all dietary restrictions configured for the user.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetDietaryRestrictions(int id)
+    {
+        var restrictions = await queryService.Handle(new GetDietaryRestrictionsByUserIdQuery(new UserId(id)));
+        return Ok(restrictions.Select(dr => dr.Restriction).ToArray());
+    }
 }
