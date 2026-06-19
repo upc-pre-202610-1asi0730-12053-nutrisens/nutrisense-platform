@@ -80,4 +80,28 @@ public class BodyMetricsController(
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
+
+    [HttpPost("{userId:int}/body-measurements")]
+    [SwaggerOperation(
+        Summary = "Register a body measurement",
+        Description = "Records waist and neck circumference measurements. Returns updated body metrics.")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RegisterBodyMeasurement(int userId, [FromBody] RegisterBodyMeasurementResource resource)
+    {
+        var command = RegisterBodyMeasurementCommandAssembler.ToCommand(userId, resource);
+        var result = await commandService.Handle(command);
+        return result switch
+        {
+            Result<BodyMetrics, RegisterBodyMeasurementError>.Success s =>
+                StatusCode(StatusCodes.Status201Created, BodyMetricsResourceAssembler.ToResource(s.Value)),
+            Result<BodyMetrics, RegisterBodyMeasurementError>.Failure { Error: RegisterBodyMeasurementError.BodyMetricsNotFound } =>
+                NotFound(),
+            Result<BodyMetrics, RegisterBodyMeasurementError>.Failure { Error: RegisterBodyMeasurementError.InvalidData } =>
+                BadRequest("Invalid measurement values."),
+            _ => StatusCode(StatusCodes.Status500InternalServerError)
+        };
+    }
 }
