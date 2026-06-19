@@ -1,0 +1,24 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
+using Nutrisense.Nutrisense.Platform.IAM.Application.Errors;
+using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
+using Nutrisense.Nutrisense.Platform.Shared.Resources;
+
+namespace Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Transform;
+
+public static class DeleteUserResultAssembler
+{
+    public static IActionResult ToActionResult(
+        Result<bool, DeleteUserError> result,
+        IStringLocalizer<SharedResource> localizer) =>
+        result switch
+        {
+            Result<bool, DeleteUserError>.Success =>
+                new NoContentResult(),
+            Result<bool, DeleteUserError>.Failure { Error: DeleteUserError.UserNotFound } =>
+                new NotFoundObjectResult(new { message = localizer["UserNotFound"].Value }),
+            _ =>
+                new ObjectResult(new { message = localizer["UnexpectedError"].Value })
+                    { StatusCode = StatusCodes.Status500InternalServerError }
+        };
+}
