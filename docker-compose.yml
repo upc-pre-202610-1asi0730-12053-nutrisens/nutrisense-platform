@@ -1,0 +1,16 @@
+services:
+  nutrisense-platform:
+    image: nutrisense-platform:${APP_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
+      - ConnectionStrings__DefaultConnection=server=${DATABASE_URL};user=${DATABASE_USER};password=${DATABASE_PASSWORD};database=${DATABASE_SCHEMA}
+      - TokenSettings__Secret=${JWT_SECRET}
+      - OpenWeatherMap__ApiKey=${OPENWEATHERMAP_API_KEY}
+      - DeepSeek__ApiKey=${DEEPSEEK_API_KEY}
+      - Gemini__ApiKey=${GEMINI_API_KEY}
+      - Usda__ApiKey=${USDA_API_KEY}
