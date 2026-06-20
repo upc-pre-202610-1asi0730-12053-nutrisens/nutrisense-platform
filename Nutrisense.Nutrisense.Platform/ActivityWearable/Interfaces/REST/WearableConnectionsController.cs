@@ -49,4 +49,17 @@ public class WearableConnectionsController(
         var result = await commandService.Handle(new SyncActivityDataCommand(id));
         return SyncActivityResultAssembler.ToActionResult(result, localizer);
     }
+
+    /// <summary>Disconnects a previously connected wearable device.</summary>
+    /// <param name="id">Identifier of the wearable connection to disconnect.</param>
+    /// <returns>204 No Content on success, or 404 Not Found if it does not exist.</returns>
+    [HttpDelete("{id:int}")]
+    [SwaggerOperation("Disconnect a wearable device")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DisconnectDevice(int id)
+    {
+        var result = await commandService.Handle(new DisconnectDeviceCommand(id));
+        return DisconnectDeviceResultAssembler.ToActionResult(result, localizer);
+    }
 }
