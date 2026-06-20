@@ -3,6 +3,7 @@ using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.IAM.Application.Errors;
 using Nutrisense.Nutrisense.Platform.IAM.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Transform;
@@ -18,13 +19,13 @@ public static class RegisterUserResultAssembler
                 new ObjectResult(UserResourceAssembler.ToResource(s.Value))
                     { StatusCode = StatusCodes.Status201Created },
             Result<User, RegisterUserError>.Failure { Error: RegisterUserError.EmailAlreadyTaken } =>
-                new ConflictObjectResult(new { message = localizer["EmailAlreadyTaken"].Value }),
+                new ConflictObjectResult(new ErrorResponse(localizer["EmailAlreadyTaken"].Value)),
             Result<User, RegisterUserError>.Failure { Error: RegisterUserError.WeakPassword } =>
-                new BadRequestObjectResult(new { message = localizer["WeakPassword"].Value }),
+                new BadRequestObjectResult(new ErrorResponse(localizer["WeakPassword"].Value)),
             Result<User, RegisterUserError>.Failure { Error: RegisterUserError.InvalidEmail } =>
-                new BadRequestObjectResult(new { message = localizer["InvalidEmail"].Value }),
+                new BadRequestObjectResult(new ErrorResponse(localizer["InvalidEmail"].Value)),
             _ =>
-                new ObjectResult(new { message = localizer["UnexpectedError"].Value })
+                new ObjectResult(new ErrorResponse(localizer["UnexpectedError"].Value))
                     { StatusCode = StatusCodes.Status500InternalServerError }
         };
 }
