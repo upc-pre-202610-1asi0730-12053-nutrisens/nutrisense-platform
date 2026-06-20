@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.Errors;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.CommandServices;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Commands;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Interfaces.REST.Transform;
 using Swashbuckle.AspNetCore.Annotations;
@@ -19,7 +21,8 @@ namespace Nutrisense.Nutrisense.Platform.Subscriptions.Interfaces.REST;
 [Produces("application/json")]
 [Consumes("application/json")]
 public class PaymentMethodsController(
-    IPaymentMethodCommandService commandService) : ControllerBase
+    IPaymentMethodCommandService commandService,
+    IPaymentMethodQueryService queryService) : ControllerBase
 {
     [HttpPost]
     [SwaggerOperation(Summary = "Register payment method", Description = "Registers a new payment method for a user. Validates card details via Stripe.")]
@@ -42,6 +45,16 @@ public class PaymentMethodsController(
                 BadRequest("Invalid card details."),
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
+    }
+
+    [HttpGet("by-user/{userId:int}")]
+    [SwaggerOperation(Summary = "Get user payment methods", Description = "Retrieves all payment methods registered for a specific user.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetByUser(int userId)
+    {
+        var methods = await queryService.Handle(new GetPaymentMethodsByUserIdQuery(userId));
+        return Ok(methods.Select(PaymentMethodResourceAssembler.ToResource));
     }
 
     [HttpDelete("{id:int}")]
