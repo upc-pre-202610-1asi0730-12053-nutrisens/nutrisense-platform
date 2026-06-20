@@ -27,9 +27,23 @@ using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Domain.Repositories;
 using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Domain.Services;
 using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Infrastructure.Calculators;
 using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Infrastructure.Persistence.EFC.Repositories;
+// Subscriptions BC
+using Nutrisense.Nutrisense.Platform.Subscriptions.Application.Acl;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Interfaces.Acl;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Application.Internal.CommandServices;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Application.Internal.QueryServices;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Application.CommandServices;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Application.QueryServices;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Repositories;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Services;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Infrastructure.External.Stripe;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Infrastructure.Persistence.EFC.Repositories;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Infrastructure.CrossContext;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Infrastructure.Persistence.EFC.Seeders;
 // Shared
 using Nutrisense.Nutrisense.Platform.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Repositories;
+using Nutrisense.Nutrisense.Platform.Shared.Domain.Services;
 using Nutrisense.Nutrisense.Platform.Shared.Infrastructure.Interfaces.ASP.Configuration;
 using Nutrisense.Nutrisense.Platform.Shared.Infrastructure.Persistence.EFC.Configuration;
 using Nutrisense.Nutrisense.Platform.Shared.Infrastructure.Persistence.EFC.Repositories;
@@ -182,6 +196,19 @@ builder.Services.AddScoped<IBodyMetricsCommandService, BodyMetricsCommandService
 builder.Services.AddScoped<IBodyMetricsQueryService, BodyMetricsQueryService>();
 builder.Services.AddScoped<IBodyHealthMetricsContextFacade, BodyHealthMetricsContextFacade>();
 
+// Subscriptions Bounded Context
+builder.Services.AddScoped<IUserSubscriptionRepository, UserSubscriptionRepository>();
+builder.Services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
+builder.Services.AddScoped<ISubscriptionPlanRepository, SubscriptionPlanRepository>();
+builder.Services.AddScoped<IPaymentGateway, StripePaymentGateway>();
+builder.Services.AddScoped<IUserSubscriptionCommandService, UserSubscriptionCommandService>();
+builder.Services.AddScoped<IUserSubscriptionQueryService, UserSubscriptionQueryService>();
+builder.Services.AddScoped<IPaymentMethodCommandService, PaymentMethodCommandService>();
+builder.Services.AddScoped<IPaymentMethodQueryService, PaymentMethodQueryService>();
+builder.Services.AddScoped<ISubscriptionPlanQueryService, SubscriptionPlanQueryService>();
+builder.Services.AddScoped<ISubscriptionsContextFacade, SubscriptionsContextFacade>();
+builder.Services.AddScoped<ISubscriptionTierLookup, CrossContextSubscriptionTierLookup>();
+
 var app = builder.Build();
 
 // Apply pending migrations on startup (safe to call even when schema is up to date)
@@ -189,6 +216,7 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     context.Database.Migrate();
+    await new SubscriptionPlanSeeder(context).SeedAsync();
 }
 
 // Configure the HTTP request pipeline.
