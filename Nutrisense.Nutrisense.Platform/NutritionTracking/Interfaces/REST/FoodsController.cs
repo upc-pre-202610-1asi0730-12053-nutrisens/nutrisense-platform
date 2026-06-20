@@ -33,6 +33,17 @@ public class FoodsController(
         return Ok(foods.Select(FoodResourceAssembler.ToSearchResource));
     }
 
+    [HttpGet("{id:int}")]
+    [AllowAnonymous]
+    [SwaggerOperation("Get a food entry by ID")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var food = await queryService.Handle(new GetFoodByIdQuery(id));
+        return food is null ? NotFound() : Ok(FoodResourceAssembler.ToResource(food));
+    }
+
     [HttpPost]
     [Authorize] // TODO: restrict to admin role once a roles system exists.
     [Consumes("application/json")]
