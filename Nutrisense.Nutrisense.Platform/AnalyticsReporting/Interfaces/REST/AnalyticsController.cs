@@ -9,6 +9,7 @@ using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -29,12 +30,12 @@ public class AnalyticsController(
     [HttpGet("dashboard/by-user/{userId:int}")]
     [SwaggerOperation(Summary = "Get dashboard data for a user", Description = "Retrieves dashboard metrics for a specific date including calories, macros, adherence and streak. Also records the dashboard view and updates user's streak.")]
     [SwaggerResponse(200, "Dashboard data retrieved successfully", typeof(DashboardResource))]
-    [SwaggerResponse(400, "Invalid date format")]
-    [SwaggerResponse(401, "User is not authenticated")]
+    [SwaggerResponse(400, "The provided date is not in the expected yyyy-MM-dd format.", typeof(ErrorResponse))]
+    [SwaggerResponse(401, "Authentication is required to access this resource.")]
     public async Task<IActionResult> GetDashboard(int userId, [FromQuery] string date)
     {
         if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
-            return BadRequest(new { message = "Invalid date format. Use yyyy-MM-dd." });
+            return BadRequest(new ErrorResponse("Invalid date format. Use yyyy-MM-dd."));
 
         await commandService.Handle(new ViewDashboardCommand(userId));
 
@@ -46,14 +47,14 @@ public class AnalyticsController(
     [HttpGet("progress/by-user/{userId:int}")]
     [SwaggerOperation(Summary = "Get progress chart data", Description = "Retrieves daily progress snapshots including calories and adherence scores within the specified date range.")]
     [SwaggerResponse(200, "Progress chart data retrieved successfully", typeof(ProgressChartResource))]
-    [SwaggerResponse(400, "Invalid date format")]
-    [SwaggerResponse(401, "User is not authenticated")]
+    [SwaggerResponse(400, "One of the provided dates is not in the expected yyyy-MM-dd format.", typeof(ErrorResponse))]
+    [SwaggerResponse(401, "Authentication is required to access this resource.")]
     public async Task<IActionResult> GetProgressChart(
         int userId, [FromQuery] string from, [FromQuery] string to)
     {
         if (!DateOnly.TryParseExact(from, "yyyy-MM-dd", out var fromDate)
             || !DateOnly.TryParseExact(to, "yyyy-MM-dd", out var toDate))
-            return BadRequest(new { message = "Invalid date format. Use yyyy-MM-dd." });
+            return BadRequest(new ErrorResponse("Invalid date format. Use yyyy-MM-dd."));
 
         var data = await queryService.Handle(new GetProgressChartQuery(userId, fromDate, toDate));
 
@@ -63,7 +64,7 @@ public class AnalyticsController(
     [HttpGet("streaks/by-user/{userId:int}")]
     [SwaggerOperation(Summary = "Get streak data", Description = "Retrieves the user's current and longest streaks along with weekly completion rate and list of recently completed dates.")]
     [SwaggerResponse(200, "Streak data retrieved successfully", typeof(StreakResource))]
-    [SwaggerResponse(401, "User is not authenticated")]
+    [SwaggerResponse(401, "Authentication is required to access this resource.")]
     public async Task<IActionResult> GetStreak(int userId)
     {
         var data = await queryService.Handle(new GetStreakQuery(userId));
@@ -74,7 +75,8 @@ public class AnalyticsController(
     [HttpPost("dashboard-views/{userId:int}")]
     [SwaggerOperation(Summary = "Record dashboard view", Description = "Records that the user has viewed the dashboard, which updates the user's streak counter.")]
     [SwaggerResponse(204, "Dashboard view recorded successfully")]
-    [SwaggerResponse(401, "User is not authenticated")]
+    [SwaggerResponse(401, "Authentication is required to access this resource.")]
+    [SwaggerResponse(500, "An unexpected server error occurred while recording the dashboard view.", typeof(ErrorResponse))]
     public async Task<IActionResult> RecordDashboardView(int userId)
     {
         var result = await commandService.Handle(new ViewDashboardCommand(userId));
@@ -82,7 +84,7 @@ public class AnalyticsController(
         {
             Result<bool, ViewDashboardError>.Success => NoContent(),
             Result<bool, ViewDashboardError>.Failure f => StatusCode(500,
-                new { message = localizer["UnexpectedErrorProcessingRequest"].Value }),
+                new ErrorResponse(localizer["UnexpectedErrorProcessingRequest"].Value)),
             _ => StatusCode(500)
         };
     }
@@ -90,15 +92,16 @@ public class AnalyticsController(
     [HttpPost("export/{userId:int}")]
     [SwaggerOperation(Summary = "Export PDF report", Description = "Exports a PDF report containing analytics data for the specified date range. Requires a Premium subscription.")]
     [SwaggerResponse(200, "PDF report exported successfully")]
-    [SwaggerResponse(400, "Invalid date format or date range")]
-    [SwaggerResponse(401, "User is not authenticated")]
-    [SwaggerResponse(403, "Premium subscription required")]
+    [SwaggerResponse(400, "The provided date is not in the expected yyyy-MM-dd format or the date range is not valid.", typeof(ErrorResponse))]
+    [SwaggerResponse(401, "Authentication is required to access this resource.")]
+    [SwaggerResponse(403, "This feature requires an active premium subscription.", typeof(ErrorResponse))]
+    [SwaggerResponse(500, "An unexpected server error occurred while exporting the report.", typeof(ErrorResponse))]
     public async Task<IActionResult> ExportReport(
         int userId, [FromQuery] string from, [FromQuery] string to)
     {
         if (!DateOnly.TryParseExact(from, "yyyy-MM-dd", out var fromDate)
             || !DateOnly.TryParseExact(to, "yyyy-MM-dd", out var toDate))
-            return BadRequest(new { message = "Invalid date format. Use yyyy-MM-dd." });
+            return BadRequest(new ErrorResponse("Invalid date format. Use yyyy-MM-dd."));
 
         var result = await commandService.Handle(new ExportReportPdfCommand(userId, fromDate, toDate));
 
@@ -110,10 +113,10 @@ public class AnalyticsController(
                 f.Error switch
                 {
                     ExportReportPdfError.PremiumRequired =>
-                        StatusCode(403, new { message = localizer["PremiumRequired"].Value }),
+                        StatusCode(403, new ErrorResponse(localizer["PremiumRequired"].Value)),
                     ExportReportPdfError.InvalidDateRange =>
-                        BadRequest(new { message = localizer["InvalidDateRange"].Value }),
-                    _ => StatusCode(500, new { message = localizer["UnexpectedErrorProcessingRequest"].Value })
+                        BadRequest(new ErrorResponse(localizer["InvalidDateRange"].Value)),
+                    _ => StatusCode(500, new ErrorResponse(localizer["UnexpectedErrorProcessingRequest"].Value))
                 },
             _ => StatusCode(500)
         };

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Queries;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Interfaces.REST.Transform;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -16,9 +17,8 @@ public class PaymentsController(IUserSubscriptionQueryService queryService) : Co
 {
     [HttpGet("by-subscription/{subscriptionId:int}")]
     [SwaggerOperation(Summary = "Get payment history", Description = "Retrieves payment records for a specific subscription with their status and amounts.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Payment history retrieved successfully.", typeof(PaymentRecordResource[]))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
     public async Task<IActionResult> GetBySubscription(int subscriptionId)
     {
         var records = await queryService.Handle(new GetPaymentHistoryBySubscriptionIdQuery(subscriptionId));

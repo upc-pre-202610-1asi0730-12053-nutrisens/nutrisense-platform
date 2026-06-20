@@ -3,6 +3,7 @@ using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.Errors;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Transform;
@@ -22,11 +23,11 @@ public static class SyncActivityResultAssembler
             Result<WearableConnection, SyncActivityDataError>.Success s =>
                 new OkObjectResult(WearableConnectionAssembler.ToResource(s.Value)),
             Result<WearableConnection, SyncActivityDataError>.Failure { Error: SyncActivityDataError.ConnectionNotFound } =>
-                new NotFoundObjectResult(new { message = "Wearable connection not found." }),
+                new NotFoundObjectResult(new ErrorResponse("Wearable connection not found.")),
             Result<WearableConnection, SyncActivityDataError>.Failure { Error: SyncActivityDataError.SyncFailed } =>
-                new BadRequestObjectResult(new { message = "Activity sync failed." }),
+                new BadRequestObjectResult(new ErrorResponse("Activity sync failed.")),
             _ =>
-                new ObjectResult(new { message = localizer["UnexpectedError"].Value })
+                new ObjectResult(new ErrorResponse(localizer["UnexpectedError"].Value))
                     { StatusCode = StatusCodes.Status500InternalServerError }
         };
 }

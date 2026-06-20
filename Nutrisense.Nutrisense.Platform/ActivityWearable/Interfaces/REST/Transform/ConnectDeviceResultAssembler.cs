@@ -3,6 +3,7 @@ using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.Errors;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Transform;
@@ -23,13 +24,13 @@ public static class ConnectDeviceResultAssembler
                 new ObjectResult(WearableConnectionAssembler.ToResource(s.Value))
                     { StatusCode = StatusCodes.Status201Created },
             Result<WearableConnection, ConnectDeviceError>.Failure { Error: ConnectDeviceError.AlreadyConnected } =>
-                new ConflictObjectResult(new { message = "Device already connected for this provider." }),
+                new ConflictObjectResult(new ErrorResponse("Device already connected for this provider.")),
             Result<WearableConnection, ConnectDeviceError>.Failure { Error: ConnectDeviceError.AuthorizationFailed } =>
-                new BadRequestObjectResult(new { message = "OAuth authorization failed." }),
+                new BadRequestObjectResult(new ErrorResponse("OAuth authorization failed.")),
             Result<WearableConnection, ConnectDeviceError>.Failure { Error: ConnectDeviceError.InvalidProvider } =>
-                new BadRequestObjectResult(new { message = "Invalid wearable provider." }),
+                new BadRequestObjectResult(new ErrorResponse("Invalid wearable provider.")),
             _ =>
-                new ObjectResult(new { message = localizer["UnexpectedError"].Value })
+                new ObjectResult(new ErrorResponse(localizer["UnexpectedError"].Value))
                     { StatusCode = StatusCodes.Status500InternalServerError }
         };
 }
