@@ -63,4 +63,26 @@ public class UserSubscriptionsController(
         var subscription = await queryService.Handle(new GetUserSubscriptionByUserIdQuery(userId));
         return subscription is null ? NotFound() : Ok(UserSubscriptionResourceAssembler.ToResource(subscription));
     }
+
+    [HttpPost("{id:int}/cancel")]
+    [SwaggerOperation(Summary = "Cancel subscription", Description = "Cancels an active subscription either immediately or at the end of the current billing period.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Cancel(int id, [FromBody] CancelSubscriptionResource resource)
+    {
+        var command = new CancelSubscriptionCommand(id, resource.CancelAtPeriodEnd);
+        var result = await commandService.HandleCancel(command);
+        return result switch
+        {
+            Result<UserSubscription, CancelSubscriptionError>.Success s =>
+                Ok(UserSubscriptionResourceAssembler.ToResource(s.Value)),
+            Result<UserSubscription, CancelSubscriptionError>.Failure { Error: CancelSubscriptionError.NotFound } =>
+                NotFound(),
+            Result<UserSubscription, CancelSubscriptionError>.Failure { Error: CancelSubscriptionError.NotActive } =>
+                BadRequest("Subscription is not active."),
+            _ => StatusCode(StatusCodes.Status500InternalServerError)
+        };
+    }
 }
