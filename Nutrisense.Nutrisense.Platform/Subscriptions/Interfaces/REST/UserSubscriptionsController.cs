@@ -85,4 +85,25 @@ public class UserSubscriptionsController(
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
+
+    [HttpPost("{id:int}/renew")]
+    [SwaggerOperation(Summary = "Renew subscription", Description = "Renews an expired or expiring subscription by processing a payment.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status402PaymentRequired)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Renew(int id)
+    {
+        var result = await commandService.HandleRenew(new RenewSubscriptionCommand(id));
+        return result switch
+        {
+            Result<UserSubscription, RenewSubscriptionError>.Success s =>
+                Ok(UserSubscriptionResourceAssembler.ToResource(s.Value)),
+            Result<UserSubscription, RenewSubscriptionError>.Failure { Error: RenewSubscriptionError.NotFound } =>
+                NotFound(),
+            Result<UserSubscription, RenewSubscriptionError>.Failure { Error: RenewSubscriptionError.PaymentFailed } =>
+                StatusCode(StatusCodes.Status402PaymentRequired, "Payment failed."),
+            _ => StatusCode(StatusCodes.Status500InternalServerError)
+        };
+    }
 }
