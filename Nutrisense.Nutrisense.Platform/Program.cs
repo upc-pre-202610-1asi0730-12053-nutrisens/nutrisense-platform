@@ -68,8 +68,20 @@ using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Services;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Infrastructure.Calculators;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Infrastructure.External.GoogleFit;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Infrastructure.Persistence.EFC.Repositories;
+// SmartRecommendations BC
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.Internal.CommandServices;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.Internal.QueryServices;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.CommandServices;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.QueryServices;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Repositories;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Infrastructure.External;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Infrastructure.External.DeepSeek;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Infrastructure.Persistence.EFC.Repositories;
+// SmartRecommendations domain services — aliased to avoid clash with other BCs' domain services
+using SmartRecsServices = Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Services;
 // Shared
 using Nutrisense.Nutrisense.Platform.Resources;
+using Nutrisense.Nutrisense.Platform.Shared.Infrastructure.Seeding;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Repositories;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Services;
 using Nutrisense.Nutrisense.Platform.Shared.Infrastructure.Interfaces.ASP.Configuration;
@@ -267,6 +279,28 @@ builder.Services.AddScoped<IActivityLogQueryService, ActivityLogQueryService>();
 builder.Services.AddScoped<IWearableConnectionCommandService, WearableConnectionCommandService>();
 builder.Services.AddScoped<IWearableConnectionQueryService, WearableConnectionQueryService>();
 builder.Services.AddScoped<IActivityWearableContextFacade, ActivityWearableContextFacade>();
+
+// SmartRecommendations Bounded Context
+builder.Services.AddScoped<IPantryRepository, PantryRepository>();
+builder.Services.AddScoped<IRecipeRepository, RecipeRepository>();
+builder.Services.AddScoped<ICityRepository, CityRepository>();
+builder.Services.AddScoped<IIngredientCatalogRepository, IngredientCatalogRepository>();
+builder.Services.AddScoped<ILocationPreferenceRepository, LocationPreferenceRepository>();
+builder.Services.AddScoped<IRecommendationCardRepository, RecommendationCardRepository>();
+builder.Services.AddScoped<SmartRecsServices.IGeolocationService, GeolocationService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<SmartRecsServices.IWeatherService, OpenWeatherMapWeatherService>();
+builder.Services.AddHttpClient<SmartRecsServices.IGeocodingService, OpenWeatherMapGeocodingService>();
+builder.Services.AddScoped<SmartRecsServices.IRecipeGenerationService, DeepSeekRecipeGenerationService>();
+builder.Services.AddScoped<SmartRecsServices.ILocalFoodSuggestionService, DeepSeekLocalFoodSuggestionService>();
+builder.Services.AddScoped<IIngredientCatalogImportCommandService, IngredientCatalogImportCommandService>();
+builder.Services.AddScoped<IRecipeImportCommandService, RecipeImportCommandService>();
+builder.Services.AddScoped<IRecsEngineCommandService, RecsEngineCommandService>();
+builder.Services.AddScoped<IRecsEngineQueryService, RecsEngineQueryService>();
+
+// Background catalog import (USDA foods + DeepSeek enrichment, derived ingredients, generated recipes).
+// Gated by Seeder:Enabled and per-stage count thresholds; runs after startup so the app stays responsive.
+builder.Services.AddHostedService<CatalogImportHostedService>();
 
 var app = builder.Build();
 
