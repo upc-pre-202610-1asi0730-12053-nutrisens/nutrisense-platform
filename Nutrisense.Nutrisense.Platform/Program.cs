@@ -79,6 +79,17 @@ using Nutrisense.Nutrisense.Platform.SmartRecommendations.Infrastructure.Externa
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Infrastructure.Persistence.EFC.Repositories;
 // SmartRecommendations domain services — aliased to avoid clash with other BCs' domain services
 using SmartRecsServices = Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Services;
+// AnalyticsReporting BC
+using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Application.Internal.CommandServices;
+using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Application.Internal.QueryServices;
+using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Application.CommandServices;
+using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Application.QueryServices;
+using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Domain.Repositories;
+using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Infrastructure.Calculators;
+using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Infrastructure.External.Pdf;
+using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Infrastructure.Persistence.EFC.Repositories;
+// AnalyticsReporting domain services — aliased to avoid clash with SmartRecommendations
+using AnalyticsServices = Nutrisense.Nutrisense.Platform.AnalyticsReporting.Domain.Services;
 // Shared
 using Nutrisense.Nutrisense.Platform.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Infrastructure.Seeding;
@@ -297,6 +308,14 @@ builder.Services.AddScoped<IIngredientCatalogImportCommandService, IngredientCat
 builder.Services.AddScoped<IRecipeImportCommandService, RecipeImportCommandService>();
 builder.Services.AddScoped<IRecsEngineCommandService, RecsEngineCommandService>();
 builder.Services.AddScoped<IRecsEngineQueryService, RecsEngineQueryService>();
+
+// AnalyticsReporting Bounded Context
+builder.Services.AddScoped<IUserAnalyticsRepository, UserAnalyticsRepository>();
+builder.Services.AddScoped<AnalyticsServices.IAdherenceCalculator, AdherenceCalculator>();
+builder.Services.AddScoped<AnalyticsServices.IStreakCalculator, StreakCalculator>();
+builder.Services.AddScoped<AnalyticsServices.IReportPdfGenerator, PdfReportGenerator>();
+builder.Services.AddScoped<IAnalyticsCommandService, AnalyticsCommandService>();
+builder.Services.AddScoped<IAnalyticsQueryService, AnalyticsQueryService>();
 
 // Background catalog import (USDA foods + DeepSeek enrichment, derived ingredients, generated recipes).
 // Gated by Seeder:Enabled and per-stage count thresholds; runs after startup so the app stays responsive.
