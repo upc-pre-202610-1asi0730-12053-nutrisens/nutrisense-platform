@@ -56,6 +56,18 @@ using Nutrisense.Nutrisense.Platform.NutritionTracking.Infrastructure.Persistenc
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Infrastructure.Services;
 using Nutrisense.Nutrisense.Platform.Shared.Infrastructure.External.DeepSeek;
 using Nutrisense.Nutrisense.Platform.Shared.Infrastructure.External.Gemini;
+// ActivityWearable BC
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.Acl;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.Acl;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.Internal.CommandServices;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.Internal.QueryServices;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.CommandServices;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.QueryServices;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Repositories;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Services;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Infrastructure.Calculators;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Infrastructure.External.GoogleFit;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Infrastructure.Persistence.EFC.Repositories;
 // Shared
 using Nutrisense.Nutrisense.Platform.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Repositories;
@@ -244,6 +256,17 @@ builder.Services.AddScoped<INutritionTrackingContextFacade, NutritionTrackingCon
 builder.Services.AddHttpClient<IExternalFoodDataProvider, UsdaFoodDataProvider>();
 builder.Services.AddHttpClient<DeepSeekClient>();
 builder.Services.AddHttpClient<GeminiClient>();
+
+// ActivityWearable Bounded Context
+builder.Services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+builder.Services.AddScoped<IWearableConnectionRepository, WearableConnectionRepository>();
+builder.Services.AddScoped<ICaloricBalanceCalculator, CaloricBalanceCalculator>();
+builder.Services.AddScoped<IWearableSyncProvider, GoogleFitSyncProvider>();
+builder.Services.AddScoped<IActivityLogCommandService, ActivityLogCommandService>();
+builder.Services.AddScoped<IActivityLogQueryService, ActivityLogQueryService>();
+builder.Services.AddScoped<IWearableConnectionCommandService, WearableConnectionCommandService>();
+builder.Services.AddScoped<IWearableConnectionQueryService, WearableConnectionQueryService>();
+builder.Services.AddScoped<IActivityWearableContextFacade, ActivityWearableContextFacade>();
 
 var app = builder.Build();
 
