@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.CommandServices;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Model.Commands;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.Shared.Resources;
@@ -20,6 +22,7 @@ namespace Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST;
 /// <summary>REST endpoints for logging, querying and deleting user activity logs.</summary>
 public class ActivityLogsController(
     IActivityLogCommandService commandService,
+    IActivityLogQueryService queryService,
     IStringLocalizer<SharedResource> localizer) : ControllerBase
 {
     /// <summary>Logs a manual activity and triggers the caloric balance recalculation chain.</summary>
@@ -37,6 +40,37 @@ public class ActivityLogsController(
         var command = ActivityLogAssembler.ToCommand(resource);
         var result = await commandService.Handle(command);
         return LogManualActivityResultAssembler.ToActionResult(result, localizer);
+    }
+
+    /// <summary>Returns a user's activity logs, optionally filtered by a date range.</summary>
+    /// <param name="userId">Identifier of the user whose logs are requested.</param>
+    /// <param name="from">Optional inclusive lower bound (yyyy-MM-dd).</param>
+    /// <param name="to">Optional inclusive upper bound (yyyy-MM-dd).</param>
+    /// <returns>200 OK with the activity resources, or 400 Bad Request on an invalid date.</returns>
+    [HttpGet("by-user/{userId:int}")]
+    [SwaggerOperation("Get activity logs for a user with optional date range")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetByUser(
+        int userId,
+        [FromQuery] string? from = null,
+        [FromQuery] string? to = null)
+    {
+        DateOnly? fromDate = null;
+        DateOnly? toDate = null;
+
+        if (from is not null && !DateOnly.TryParseExact(from, "yyyy-MM-dd", out var parsedFrom))
+            return BadRequest(new { message = "Invalid 'from' date format. Use yyyy-MM-dd." });
+        else if (from is not null)
+            fromDate = DateOnly.ParseExact(from, "yyyy-MM-dd", null);
+
+        if (to is not null && !DateOnly.TryParseExact(to, "yyyy-MM-dd", out var parsedTo))
+            return BadRequest(new { message = "Invalid 'to' date format. Use yyyy-MM-dd." });
+        else if (to is not null)
+            toDate = DateOnly.ParseExact(to, "yyyy-MM-dd", null);
+
+        var logs = await queryService.Handle(new GetActivityLogsByUserQuery(userId, fromDate, toDate));
+        return Ok(logs.Select(ActivityLogAssembler.ToResource));
     }
 
     /// <summary>Deletes an activity log entry on behalf of its owner and recalculates that day's caloric balance.</summary>
