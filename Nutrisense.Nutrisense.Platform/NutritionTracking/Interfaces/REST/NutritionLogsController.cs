@@ -37,6 +37,23 @@ public class NutritionLogsController(
         return LogMealResultAssembler.ToActionResult(result, localizer);
     }
 
+    [HttpPost("scan-dish/confirm")]
+    [Consumes("application/json")]
+    [SwaggerOperation("Confirm and persist a scanned dish to the nutrition log")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ConfirmScan([FromBody] ConfirmScanResource resource)
+    {
+        if (!DateOnly.TryParseExact(resource.Date, "yyyy-MM-dd", out _))
+            return BadRequest(new { message = "Invalid date format. Use yyyy-MM-dd." });
+
+        var command = ConfirmScanCommandAssembler.ToCommand(resource);
+        var result = await commandService.Handle(command);
+        return ConfirmScanResultAssembler.ToActionResult(result, localizer);
+    }
+
     [HttpPost("scan-dish")]
     [Consumes("application/json")]
     [SwaggerOperation("Analyze a dish photo and return a preview (does not persist)")]
