@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.Errors;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.QueryServices;
@@ -26,9 +27,9 @@ public class PaymentMethodsController(
 {
     [HttpPost]
     [SwaggerOperation(Summary = "Register payment method", Description = "Registers a new payment method for a user. Validates card details via Stripe.")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerResponse(StatusCodes.Status201Created, "Payment method registered successfully.", typeof(PaymentMethodResource))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "The provided card details are not valid.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
     public async Task<IActionResult> Register([FromBody] RegisterPaymentMethodResource resource)
     {
         var command = new RegisterPaymentMethodCommand(
@@ -42,15 +43,15 @@ public class PaymentMethodsController(
             Result<PaymentMethod, RegisterPaymentMethodError>.Success s =>
                 StatusCode(StatusCodes.Status201Created, PaymentMethodResourceAssembler.ToResource(s.Value)),
             Result<PaymentMethod, RegisterPaymentMethodError>.Failure { Error: RegisterPaymentMethodError.InvalidCard } =>
-                BadRequest("Invalid card details."),
+                BadRequest(new ErrorResponse("The provided card details are not valid.")),
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
 
     [HttpGet("by-user/{userId:int}")]
     [SwaggerOperation(Summary = "Get user payment methods", Description = "Retrieves all payment methods registered for a specific user.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Payment methods retrieved successfully.", typeof(PaymentMethodResource[]))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
     public async Task<IActionResult> GetByUser(int userId)
     {
         var methods = await queryService.Handle(new GetPaymentMethodsByUserIdQuery(userId));
@@ -59,9 +60,9 @@ public class PaymentMethodsController(
 
     [HttpDelete("{id:int}")]
     [SwaggerOperation(Summary = "Delete payment method", Description = "Removes a payment method from a user's account. Returns 204 on success.")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerResponse(StatusCodes.Status204NoContent, "Payment method deleted successfully.")]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The requested payment method was not found.")]
     public async Task<IActionResult> Remove(int id)
     {
         var removed = await commandService.RemoveAsync(id);

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.Errors;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Transform;
@@ -23,9 +24,9 @@ public static class LogManualActivityResultAssembler
                 new ObjectResult(ActivityLogAssembler.ToResource(s.Value))
                     { StatusCode = StatusCodes.Status201Created },
             Result<ActivityLog, LogManualActivityError>.Failure { Error: LogManualActivityError.InvalidActivity } =>
-                new BadRequestObjectResult(new { message = "Invalid activity data." }),
+                new BadRequestObjectResult(new ErrorResponse("Invalid activity data.")),
             _ =>
-                new ObjectResult(new { message = localizer["UnexpectedError"].Value })
+                new ObjectResult(new ErrorResponse(localizer["UnexpectedError"].Value))
                     { StatusCode = StatusCodes.Status500InternalServerError }
         };
 }

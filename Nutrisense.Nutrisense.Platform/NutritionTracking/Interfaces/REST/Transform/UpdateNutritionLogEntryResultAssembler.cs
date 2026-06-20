@@ -3,6 +3,7 @@ using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.Errors;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Transform;
@@ -41,10 +42,10 @@ public static class UpdateNutritionLogEntryResultAssembler
                 { StatusCode = StatusCodes.Status403Forbidden },
 
             Result<NutritionLog, UpdateNutritionLogEntryError>.Failure { Error: UpdateNutritionLogEntryError.InvalidQuantity } =>
-                new BadRequestObjectResult(new { message = localizer["NutritionLogEntryInvalidQuantity"].Value }),
+                new BadRequestObjectResult(new ErrorResponse(localizer["NutritionLogEntryInvalidQuantity"].Value)),
 
             _ =>
-                new ObjectResult(new { message = localizer["UnexpectedError"].Value })
+                new ObjectResult(new ErrorResponse(localizer["UnexpectedError"].Value))
                     { StatusCode = StatusCodes.Status500InternalServerError }
         };
 }

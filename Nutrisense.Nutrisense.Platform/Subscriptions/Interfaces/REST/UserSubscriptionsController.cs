@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.Errors;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.QueryServices;
@@ -26,12 +27,11 @@ public class UserSubscriptionsController(
 {
     [HttpPost]
     [SwaggerOperation(Summary = "Select subscription plan", Description = "Selects a subscription plan for a user and initiates the activation chain including payment processing.")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status402PaymentRequired)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerResponse(StatusCodes.Status201Created, "Subscription plan selected successfully. Returns the activated subscription.", typeof(UserSubscriptionResource))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
+    [SwaggerResponse(StatusCodes.Status402PaymentRequired, "The payment could not be processed.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The subscription plan or payment method was not found.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status409Conflict, "The user already has an active subscription.", typeof(ErrorResponse))]
     public async Task<IActionResult> SelectPlan([FromBody] SelectSubscriptionPlanResource resource)
     {
         var command = new SelectSubscriptionPlanCommand(resource.UserId, resource.PlanKey, resource.PaymentMethodId, resource.BillingPeriod);
@@ -42,22 +42,22 @@ public class UserSubscriptionsController(
                 CreatedAtAction(nameof(GetByUser), new { userId = s.Value.UserId },
                     UserSubscriptionResourceAssembler.ToResource(s.Value)),
             Result<UserSubscription, SelectSubscriptionPlanError>.Failure { Error: SelectSubscriptionPlanError.PlanNotFound } =>
-                NotFound("Subscription plan not found."),
+                NotFound(new ErrorResponse("The requested subscription plan was not found.")),
             Result<UserSubscription, SelectSubscriptionPlanError>.Failure { Error: SelectSubscriptionPlanError.PaymentMethodNotFound } =>
-                NotFound("Payment method not found."),
+                NotFound(new ErrorResponse("The selected payment method was not found.")),
             Result<UserSubscription, SelectSubscriptionPlanError>.Failure { Error: SelectSubscriptionPlanError.AlreadySubscribed } =>
-                Conflict("User already has an active subscription."),
+                Conflict(new ErrorResponse("The user already has an active subscription.")),
             Result<UserSubscription, SelectSubscriptionPlanError>.Failure { Error: SelectSubscriptionPlanError.PaymentFailed } =>
-                StatusCode(StatusCodes.Status402PaymentRequired, "Payment failed."),
+                StatusCode(StatusCodes.Status402PaymentRequired, new ErrorResponse("The payment could not be processed.")),
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
 
     [HttpGet("by-user/{userId:int}")]
     [SwaggerOperation(Summary = "Get user subscription", Description = "Retrieves the active subscription for a specific user if it exists.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Subscription retrieved successfully.", typeof(UserSubscriptionResource))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "No active subscription was found for this user.", typeof(ErrorResponse))]
     public async Task<IActionResult> GetByUser(int userId)
     {
         var subscription = await queryService.Handle(new GetUserSubscriptionByUserIdQuery(userId));
@@ -66,10 +66,10 @@ public class UserSubscriptionsController(
 
     [HttpPost("{id:int}/cancel")]
     [SwaggerOperation(Summary = "Cancel subscription", Description = "Cancels an active subscription either immediately or at the end of the current billing period.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Subscription cancelled successfully. Returns the updated subscription.", typeof(UserSubscriptionResource))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "The subscription is not active and cannot be cancelled.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The requested subscription was not found.", typeof(ErrorResponse))]
     public async Task<IActionResult> Cancel(int id, [FromBody] CancelSubscriptionResource resource)
     {
         var command = new CancelSubscriptionCommand(id, resource.CancelAtPeriodEnd);
@@ -79,19 +79,19 @@ public class UserSubscriptionsController(
             Result<UserSubscription, CancelSubscriptionError>.Success s =>
                 Ok(UserSubscriptionResourceAssembler.ToResource(s.Value)),
             Result<UserSubscription, CancelSubscriptionError>.Failure { Error: CancelSubscriptionError.NotFound } =>
-                NotFound(),
+                NotFound(new ErrorResponse("The requested subscription was not found.")),
             Result<UserSubscription, CancelSubscriptionError>.Failure { Error: CancelSubscriptionError.NotActive } =>
-                BadRequest("Subscription is not active."),
+                BadRequest(new ErrorResponse("The subscription is not active and cannot be cancelled.")),
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
 
     [HttpPost("{id:int}/renew")]
     [SwaggerOperation(Summary = "Renew subscription", Description = "Renews an expired or expiring subscription by processing a payment.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status402PaymentRequired)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Subscription renewed successfully. Returns the updated subscription.", typeof(UserSubscriptionResource))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
+    [SwaggerResponse(StatusCodes.Status402PaymentRequired, "The payment could not be processed.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The requested subscription was not found.", typeof(ErrorResponse))]
     public async Task<IActionResult> Renew(int id)
     {
         var result = await commandService.HandleRenew(new RenewSubscriptionCommand(id));
@@ -100,21 +100,20 @@ public class UserSubscriptionsController(
             Result<UserSubscription, RenewSubscriptionError>.Success s =>
                 Ok(UserSubscriptionResourceAssembler.ToResource(s.Value)),
             Result<UserSubscription, RenewSubscriptionError>.Failure { Error: RenewSubscriptionError.NotFound } =>
-                NotFound(),
+                NotFound(new ErrorResponse("The requested subscription was not found.")),
             Result<UserSubscription, RenewSubscriptionError>.Failure { Error: RenewSubscriptionError.PaymentFailed } =>
-                StatusCode(StatusCodes.Status402PaymentRequired, "Payment failed."),
+                StatusCode(StatusCodes.Status402PaymentRequired, new ErrorResponse("The payment could not be processed.")),
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
 
     [HttpPut("{id:int}/plan")]
     [SwaggerOperation(Summary = "Change subscription plan", Description = "Upgrades or downgrades an active subscription to a different plan with optional payment adjustment.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status402PaymentRequired)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Subscription plan changed successfully. Returns the updated subscription.", typeof(UserSubscriptionResource))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
+    [SwaggerResponse(StatusCodes.Status402PaymentRequired, "The payment could not be processed.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The subscription or the target plan was not found.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status409Conflict, "The subscription is already on the requested plan.", typeof(ErrorResponse))]
     public async Task<IActionResult> ChangePlan(int id, [FromBody] ChangeSubscriptionPlanResource resource)
     {
         var command = new ChangeSubscriptionPlanCommand(id, resource.NewPlanKey, resource.BillingPeriod, resource.PaymentMethodId);
@@ -124,13 +123,13 @@ public class UserSubscriptionsController(
             Result<UserSubscription, ChangeSubscriptionPlanError>.Success s =>
                 Ok(UserSubscriptionResourceAssembler.ToResource(s.Value)),
             Result<UserSubscription, ChangeSubscriptionPlanError>.Failure { Error: ChangeSubscriptionPlanError.SubscriptionNotFound } =>
-                NotFound("Subscription not found."),
+                NotFound(new ErrorResponse("The requested subscription was not found.")),
             Result<UserSubscription, ChangeSubscriptionPlanError>.Failure { Error: ChangeSubscriptionPlanError.PlanNotFound } =>
-                NotFound("Target subscription plan not found."),
+                NotFound(new ErrorResponse("The target subscription plan was not found.")),
             Result<UserSubscription, ChangeSubscriptionPlanError>.Failure { Error: ChangeSubscriptionPlanError.SamePlan } =>
-                Conflict("Subscription is already on the requested plan."),
+                Conflict(new ErrorResponse("The subscription is already on the requested plan.")),
             Result<UserSubscription, ChangeSubscriptionPlanError>.Failure { Error: ChangeSubscriptionPlanError.PaymentFailed } =>
-                StatusCode(StatusCodes.Status402PaymentRequired, "Payment failed."),
+                StatusCode(StatusCodes.Status402PaymentRequired, new ErrorResponse("The payment could not be processed.")),
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
