@@ -53,6 +53,32 @@ public class NutritionLogsController(
         return UpdateNutritionLogEntryResultAssembler.ToActionResult(result, localizer, Request.Path);
     }
 
+    [HttpGet("by-user/{userId:int}/history")]
+    [SwaggerOperation("Get nutrition log history for a user with optional date range")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetHistory(
+        int userId,
+        [FromQuery] string? from = null,
+        [FromQuery] string? to = null)
+    {
+        DateOnly? fromDate = null;
+        DateOnly? toDate = null;
+
+        if (from is not null && !DateOnly.TryParseExact(from, "yyyy-MM-dd", out var parsedFrom))
+            return BadRequest(new { message = "Invalid 'from' date format. Use yyyy-MM-dd." });
+        else if (from is not null)
+            fromDate = DateOnly.ParseExact(from, "yyyy-MM-dd", null);
+
+        if (to is not null && !DateOnly.TryParseExact(to, "yyyy-MM-dd", out var parsedTo))
+            return BadRequest(new { message = "Invalid 'to' date format. Use yyyy-MM-dd." });
+        else if (to is not null)
+            toDate = DateOnly.ParseExact(to, "yyyy-MM-dd", null);
+
+        var logs = await queryService.Handle(new GetNutritionLogsByUserQuery(userId, fromDate, toDate));
+        return Ok(logs.Select(NutritionLogResourceAssembler.ToResource));
+    }
+
     [HttpDelete("{entryId:int}")]
     [SwaggerOperation("Delete a nutrition log entry")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
