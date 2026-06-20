@@ -43,6 +43,23 @@ public class AnalyticsController(
         return Ok(DashboardResourceAssembler.ToResourceFromData(data));
     }
 
+    [HttpGet("progress/by-user/{userId:int}")]
+    [SwaggerOperation(Summary = "Get progress chart data", Description = "Retrieves daily progress snapshots including calories and adherence scores within the specified date range.")]
+    [SwaggerResponse(200, "Progress chart data retrieved successfully", typeof(ProgressChartResource))]
+    [SwaggerResponse(400, "Invalid date format")]
+    [SwaggerResponse(401, "User is not authenticated")]
+    public async Task<IActionResult> GetProgressChart(
+        int userId, [FromQuery] string from, [FromQuery] string to)
+    {
+        if (!DateOnly.TryParseExact(from, "yyyy-MM-dd", out var fromDate)
+            || !DateOnly.TryParseExact(to, "yyyy-MM-dd", out var toDate))
+            return BadRequest(new { message = "Invalid date format. Use yyyy-MM-dd." });
+
+        var data = await queryService.Handle(new GetProgressChartQuery(userId, fromDate, toDate));
+
+        return Ok(ProgressChartResourceAssembler.ToResourceFromData(data));
+    }
+
     [HttpPost("dashboard-views/{userId:int}")]
     [SwaggerOperation(Summary = "Record dashboard view", Description = "Records that the user has viewed the dashboard, which updates the user's streak counter.")]
     [SwaggerResponse(204, "Dashboard view recorded successfully")]
