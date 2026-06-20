@@ -20,6 +20,21 @@ public class NutritionLogsController(
     INutritionLogCommandService commandService,
     IStringLocalizer<SharedResource> localizer) : ControllerBase
 {
+    [HttpPatch("{entryId:int}")]
+    [Consumes("application/json")]
+    [SwaggerOperation("Update the quantity of an existing nutrition log entry")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateEntry(int entryId, [FromBody] UpdateNutritionLogResource resource)
+    {
+        var command = UpdateNutritionLogEntryCommandAssembler.ToCommand(entryId, resource);
+        var result = await commandService.Handle(command);
+        return UpdateNutritionLogEntryResultAssembler.ToActionResult(result, localizer, Request.Path);
+    }
+
     [HttpPost]
     [Consumes("application/json")]
     [SwaggerOperation("Log a meal to the daily nutrition log")]
