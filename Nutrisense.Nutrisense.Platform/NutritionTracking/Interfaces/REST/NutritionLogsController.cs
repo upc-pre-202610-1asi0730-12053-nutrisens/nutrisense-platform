@@ -53,6 +53,20 @@ public class NutritionLogsController(
         return UpdateNutritionLogEntryResultAssembler.ToActionResult(result, localizer, Request.Path);
     }
 
+    [HttpGet("by-user/{userId:int}/daily-summary")]
+    [SwaggerOperation("Get the daily macro summary for a user on a specific date")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetDailySummary(int userId, [FromQuery] string date)
+    {
+        if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
+            return BadRequest(new { message = "Invalid date format. Use yyyy-MM-dd." });
+
+        var summary = await queryService.Handle(new GetDailyMacroSummaryQuery(userId, parsedDate));
+        return Ok(NutritionLogResourceAssembler.ToSummaryResource(summary));
+    }
+
     [HttpGet("by-user/{userId:int}/history")]
     [SwaggerOperation("Get nutrition log history for a user with optional date range")]
     [ProducesResponseType(StatusCodes.Status200OK)]

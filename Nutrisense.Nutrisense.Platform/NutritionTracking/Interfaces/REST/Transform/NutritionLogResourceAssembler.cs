@@ -1,4 +1,5 @@
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Aggregates;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.ValueObjects;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Transform;
@@ -13,4 +14,9 @@ public static class NutritionLogResourceAssembler
             log.FatG, log.FiberG, log.SugarG,
             log.Source, log.LoggedAt,
             log.ScanType, log.ScanConfidence, log.ScanImageUri);
+
+    public static DailyMacroSummaryResource ToSummaryResource(DailyMacroSummary summary) =>
+        new(summary.Date.ToString("yyyy-MM-dd"),
+            summary.TotalCalories, summary.TotalProteinG, summary.TotalCarbsG,
+            summary.TotalFatG, summary.TotalFiberG, summary.MealCount);
 }
