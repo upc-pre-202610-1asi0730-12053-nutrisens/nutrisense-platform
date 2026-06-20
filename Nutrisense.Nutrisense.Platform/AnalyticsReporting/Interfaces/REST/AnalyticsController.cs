@@ -60,6 +60,17 @@ public class AnalyticsController(
         return Ok(ProgressChartResourceAssembler.ToResourceFromData(data));
     }
 
+    [HttpGet("streaks/by-user/{userId:int}")]
+    [SwaggerOperation(Summary = "Get streak data", Description = "Retrieves the user's current and longest streaks along with weekly completion rate and list of recently completed dates.")]
+    [SwaggerResponse(200, "Streak data retrieved successfully", typeof(StreakResource))]
+    [SwaggerResponse(401, "User is not authenticated")]
+    public async Task<IActionResult> GetStreak(int userId)
+    {
+        var data = await queryService.Handle(new GetStreakQuery(userId));
+
+        return Ok(StreakResourceAssembler.ToResourceFromData(data));
+    }
+
     [HttpPost("dashboard-views/{userId:int}")]
     [SwaggerOperation(Summary = "Record dashboard view", Description = "Records that the user has viewed the dashboard, which updates the user's streak counter.")]
     [SwaggerResponse(204, "Dashboard view recorded successfully")]
