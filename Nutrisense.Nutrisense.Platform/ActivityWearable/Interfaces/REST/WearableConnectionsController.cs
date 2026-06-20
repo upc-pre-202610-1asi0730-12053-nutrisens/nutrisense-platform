@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.CommandServices;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Model.Commands;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.Shared.Resources;
@@ -20,6 +22,7 @@ namespace Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST;
 /// <summary>REST endpoints for connecting, querying, syncing and disconnecting user wearable devices.</summary>
 public class WearableConnectionsController(
     IWearableConnectionCommandService commandService,
+    IWearableConnectionQueryService queryService,
     IStringLocalizer<SharedResource> localizer) : ControllerBase
 {
     /// <summary>Connects a wearable device and triggers the full activity sync chain.</summary>
@@ -35,6 +38,18 @@ public class WearableConnectionsController(
         var command = WearableConnectionAssembler.ToCommand(resource);
         var result = await commandService.Handle(command);
         return ConnectDeviceResultAssembler.ToActionResult(result, localizer);
+    }
+
+    /// <summary>Returns all wearable connections belonging to a user.</summary>
+    /// <param name="userId">Identifier of the user whose connections are requested.</param>
+    /// <returns>200 OK with the connection resources.</returns>
+    [HttpGet("by-user/{userId:int}")]
+    [SwaggerOperation("Get all wearable connections for a user")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetByUser(int userId)
+    {
+        var connections = await queryService.Handle(new GetWearableConnectionsByUserIdQuery(userId));
+        return Ok(connections.Select(WearableConnectionAssembler.ToResource));
     }
 
     /// <summary>Manually triggers an activity data sync for a wearable connection.</summary>
