@@ -73,6 +73,23 @@ public class ActivityLogsController(
         return Ok(logs.Select(ActivityLogAssembler.ToResource));
     }
 
+    /// <summary>Returns the aggregated daily activity summary for a user on a specific date.</summary>
+    /// <param name="userId">Identifier of the user whose summary is requested.</param>
+    /// <param name="date">Day to summarize (yyyy-MM-dd).</param>
+    /// <returns>200 OK with the summary resource, or 400 Bad Request on an invalid date.</returns>
+    [HttpGet("by-user/{userId:int}/daily-summary")]
+    [SwaggerOperation("Get the daily activity summary for a user on a specific date")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetDailySummary(int userId, [FromQuery] string date)
+    {
+        if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
+            return BadRequest(new { message = "Invalid date format. Use yyyy-MM-dd." });
+
+        var summary = await queryService.Handle(new GetDailyActivitySummaryQuery(userId, parsedDate));
+        return Ok(ActivityLogAssembler.ToSummaryResource(summary));
+    }
+
     /// <summary>Deletes an activity log entry on behalf of its owner and recalculates that day's caloric balance.</summary>
     /// <param name="id">Identifier of the activity log to delete.</param>
     /// <param name="userId">Identifier of the requesting user, used to enforce ownership.</param>
