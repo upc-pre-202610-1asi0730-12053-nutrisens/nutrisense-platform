@@ -37,6 +37,19 @@ public class NutritionLogsController(
         return LogMealResultAssembler.ToActionResult(result, localizer);
     }
 
+    [HttpPost("scan-menu")]
+    [Consumes("application/json")]
+    [SwaggerOperation("Analyze a menu photo and return available options (does not persist)")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ScanMenu([FromBody] ScanPhotoResource resource)
+    {
+        var command = new ScanMenuPhotoCommand(resource.UserId, resource.ImageBase64OrUri);
+        var result = await commandService.Handle(command);
+        return MenuOptionsPreviewAssembler.ToActionResult(result, localizer);
+    }
+
     [HttpPost("scan-dish/confirm")]
     [Consumes("application/json")]
     [SwaggerOperation("Confirm and persist a scanned dish to the nutrition log")]
