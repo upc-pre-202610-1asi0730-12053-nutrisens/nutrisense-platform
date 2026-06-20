@@ -40,6 +40,22 @@ using Nutrisense.Nutrisense.Platform.Subscriptions.Infrastructure.External.Strip
 using Nutrisense.Nutrisense.Platform.Subscriptions.Infrastructure.Persistence.EFC.Repositories;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Infrastructure.CrossContext;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Infrastructure.Persistence.EFC.Seeders;
+// NutritionTracking BC
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.Acl;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.Acl;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.Internal.CommandServices;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.Internal.QueryServices;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.CommandServices;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.QueryServices;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Repositories;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Services;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Infrastructure.External.DeepSeek;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Infrastructure.External.Gemini;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Infrastructure.External.Usda;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Infrastructure.Persistence.EFC.Repositories;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Infrastructure.Services;
+using Nutrisense.Nutrisense.Platform.Shared.Infrastructure.External.DeepSeek;
+using Nutrisense.Nutrisense.Platform.Shared.Infrastructure.External.Gemini;
 // Shared
 using Nutrisense.Nutrisense.Platform.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Repositories;
@@ -208,6 +224,26 @@ builder.Services.AddScoped<IPaymentMethodQueryService, PaymentMethodQueryService
 builder.Services.AddScoped<ISubscriptionPlanQueryService, SubscriptionPlanQueryService>();
 builder.Services.AddScoped<ISubscriptionsContextFacade, SubscriptionsContextFacade>();
 builder.Services.AddScoped<ISubscriptionTierLookup, CrossContextSubscriptionTierLookup>();
+
+// NutritionTracking Bounded Context
+builder.Services.AddScoped<INutritionLogRepository, NutritionLogRepository>();
+builder.Services.AddScoped<IFoodRepository, FoodRepository>();
+builder.Services.AddScoped<IDishVisionService, GeminiDishVisionService>();
+builder.Services.AddScoped<IMenuVisionService, GeminiMenuVisionService>();
+builder.Services.AddScoped<IFoodNutritionEstimationService, DeepSeekFoodEstimationService>();
+builder.Services.AddScoped<IFoodSearchService, DbFoodSearchService>();
+builder.Services.AddScoped<IFoodRestrictionChecker, FoodRestrictionChecker>();
+builder.Services.AddScoped<INutritionLogCommandService, NutritionLogCommandService>();
+builder.Services.AddScoped<INutritionLogQueryService, NutritionLogQueryService>();
+builder.Services.AddScoped<IFoodCommandService, FoodCommandService>();
+builder.Services.AddScoped<IFoodProvisioningService, FoodProvisioningService>();
+builder.Services.AddScoped<IFoodQueryService, FoodQueryService>();
+builder.Services.AddScoped<IFoodImportCommandService, FoodImportCommandService>();
+builder.Services.AddScoped<IFoodEnrichmentService, DeepSeekFoodEnrichmentService>();
+builder.Services.AddScoped<INutritionTrackingContextFacade, NutritionTrackingContextFacade>();
+builder.Services.AddHttpClient<IExternalFoodDataProvider, UsdaFoodDataProvider>();
+builder.Services.AddHttpClient<DeepSeekClient>();
+builder.Services.AddHttpClient<GeminiClient>();
 
 var app = builder.Build();
 
