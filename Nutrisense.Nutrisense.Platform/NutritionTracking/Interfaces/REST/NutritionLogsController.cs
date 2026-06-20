@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.CommandServices;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Commands;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.Shared.Resources;
@@ -34,5 +35,18 @@ public class NutritionLogsController(
         var command = LogMealCommandAssembler.ToCommand(resource);
         var result = await commandService.Handle(command);
         return LogMealResultAssembler.ToActionResult(result, localizer);
+    }
+
+    [HttpPost("scan-dish")]
+    [Consumes("application/json")]
+    [SwaggerOperation("Analyze a dish photo and return a preview (does not persist)")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ScanDish([FromBody] ScanPhotoResource resource)
+    {
+        var command = new ScanMealPhotoCommand(resource.UserId, resource.ImageBase64OrUri);
+        var result = await commandService.Handle(command);
+        return ScanPreviewResultAssembler.ToActionResult(result, localizer);
     }
 }
