@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.CommandServices;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Commands;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.Shared.Resources;
@@ -19,8 +21,23 @@ namespace Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST;
 [Produces("application/json")]
 public class NutritionLogsController(
     INutritionLogCommandService commandService,
+    INutritionLogQueryService queryService,
     IStringLocalizer<SharedResource> localizer) : ControllerBase
 {
+    [HttpGet("by-user/{userId:int}")]
+    [SwaggerOperation("Get all nutrition log entries for a user on a specific date")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetByUserAndDate(int userId, [FromQuery] string date)
+    {
+        if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
+            return BadRequest(new { message = "Invalid date format. Use yyyy-MM-dd." });
+
+        var logs = await queryService.Handle(new GetNutritionLogByUserAndDateQuery(userId, parsedDate));
+        return Ok(logs.Select(NutritionLogResourceAssembler.ToResource));
+    }
+
     [HttpPatch("{entryId:int}")]
     [Consumes("application/json")]
     [SwaggerOperation("Update the quantity of an existing nutrition log entry")]
