@@ -36,4 +36,17 @@ public class WearableConnectionsController(
         var result = await commandService.Handle(command);
         return ConnectDeviceResultAssembler.ToActionResult(result, localizer);
     }
+
+    /// <summary>Manually triggers an activity data sync for a wearable connection.</summary>
+    /// <param name="id">Identifier of the wearable connection to sync.</param>
+    /// <returns>200 OK with the updated connection, or 404 Not Found if it does not exist.</returns>
+    [HttpPost("{id:int}/sync")]
+    [SwaggerOperation("Manually trigger activity data sync for a wearable connection")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SyncActivityData(int id)
+    {
+        var result = await commandService.Handle(new SyncActivityDataCommand(id));
+        return SyncActivityResultAssembler.ToActionResult(result, localizer);
+    }
 }
