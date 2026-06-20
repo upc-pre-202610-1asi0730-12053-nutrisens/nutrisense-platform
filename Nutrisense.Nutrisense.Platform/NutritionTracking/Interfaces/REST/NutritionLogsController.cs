@@ -7,6 +7,7 @@ using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Resources
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.Shared.Resources;
 using Swashbuckle.AspNetCore.Annotations;
+using System.Security.Claims;
 
 namespace Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST;
 
@@ -33,6 +34,25 @@ public class NutritionLogsController(
         var command = UpdateNutritionLogEntryCommandAssembler.ToCommand(entryId, resource);
         var result = await commandService.Handle(command);
         return UpdateNutritionLogEntryResultAssembler.ToActionResult(result, localizer, Request.Path);
+    }
+
+    [HttpDelete("{entryId:int}")]
+    [SwaggerOperation("Delete a nutrition log entry")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteEntry(int entryId)
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                          ?? User.FindFirstValue("sub");
+
+        if (!int.TryParse(userIdClaim, out var authenticatedUserId))
+            return Unauthorized();
+
+        var command = new DeleteNutritionLogEntryCommand(entryId, authenticatedUserId);
+        var result = await commandService.Handle(command);
+        return DeleteNutritionLogEntryResultAssembler.ToActionResult(result, localizer, Request.Path);
     }
 
     [HttpPost]
