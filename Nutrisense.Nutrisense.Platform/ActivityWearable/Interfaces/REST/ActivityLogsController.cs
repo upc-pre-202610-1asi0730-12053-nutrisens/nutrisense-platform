@@ -38,4 +38,19 @@ public class ActivityLogsController(
         var result = await commandService.Handle(command);
         return LogManualActivityResultAssembler.ToActionResult(result, localizer);
     }
+
+    /// <summary>Deletes an activity log entry on behalf of its owner and recalculates that day's caloric balance.</summary>
+    /// <param name="id">Identifier of the activity log to delete.</param>
+    /// <param name="userId">Identifier of the requesting user, used to enforce ownership.</param>
+    /// <returns>204 No Content on success, 403 Forbidden if not the owner, or 404 Not Found if it does not exist.</returns>
+    [HttpDelete("{id:int}")]
+    [SwaggerOperation("Delete an activity log entry and recalculate the caloric balance for that day")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteActivityLog(int id, [FromQuery] int userId)
+    {
+        var result = await commandService.Handle(new DeleteActivityLogCommand(id, userId));
+        return DeleteActivityLogResultAssembler.ToActionResult(result, localizer);
+    }
 }
