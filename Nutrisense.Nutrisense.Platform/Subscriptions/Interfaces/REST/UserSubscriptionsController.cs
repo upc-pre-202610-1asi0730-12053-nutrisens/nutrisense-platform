@@ -106,4 +106,32 @@ public class UserSubscriptionsController(
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
+
+    [HttpPut("{id:int}/plan")]
+    [SwaggerOperation(Summary = "Change subscription plan", Description = "Upgrades or downgrades an active subscription to a different plan with optional payment adjustment.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status402PaymentRequired)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ChangePlan(int id, [FromBody] ChangeSubscriptionPlanResource resource)
+    {
+        var command = new ChangeSubscriptionPlanCommand(id, resource.NewPlanKey, resource.BillingPeriod, resource.PaymentMethodId);
+        var result = await commandService.HandleChangePlan(command);
+        return result switch
+        {
+            Result<UserSubscription, ChangeSubscriptionPlanError>.Success s =>
+                Ok(UserSubscriptionResourceAssembler.ToResource(s.Value)),
+            Result<UserSubscription, ChangeSubscriptionPlanError>.Failure { Error: ChangeSubscriptionPlanError.SubscriptionNotFound } =>
+                NotFound("Subscription not found."),
+            Result<UserSubscription, ChangeSubscriptionPlanError>.Failure { Error: ChangeSubscriptionPlanError.PlanNotFound } =>
+                NotFound("Target subscription plan not found."),
+            Result<UserSubscription, ChangeSubscriptionPlanError>.Failure { Error: ChangeSubscriptionPlanError.SamePlan } =>
+                Conflict("Subscription is already on the requested plan."),
+            Result<UserSubscription, ChangeSubscriptionPlanError>.Failure { Error: ChangeSubscriptionPlanError.PaymentFailed } =>
+                StatusCode(StatusCodes.Status402PaymentRequired, "Payment failed."),
+            _ => StatusCode(StatusCodes.Status500InternalServerError)
+        };
+    }
 }
