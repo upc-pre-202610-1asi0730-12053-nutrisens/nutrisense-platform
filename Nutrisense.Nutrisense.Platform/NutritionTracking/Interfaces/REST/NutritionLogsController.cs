@@ -37,6 +37,23 @@ public class NutritionLogsController(
         return LogMealResultAssembler.ToActionResult(result, localizer);
     }
 
+    [HttpPost("scan-menu/select")]
+    [Consumes("application/json")]
+    [SwaggerOperation("Select a menu option and persist it to the nutrition log")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SelectMenuOption([FromBody] SelectMenuOptionResource resource)
+    {
+        if (!DateOnly.TryParseExact(resource.Date, "yyyy-MM-dd", out _))
+            return BadRequest(new { message = "Invalid date format. Use yyyy-MM-dd." });
+
+        var command = SelectMenuOptionCommandAssembler.ToCommand(resource);
+        var result = await commandService.Handle(command);
+        return SelectMenuOptionResultAssembler.ToActionResult(result, localizer);
+    }
+
     [HttpPost("scan-menu")]
     [Consumes("application/json")]
     [SwaggerOperation("Analyze a menu photo and return available options (does not persist)")]
