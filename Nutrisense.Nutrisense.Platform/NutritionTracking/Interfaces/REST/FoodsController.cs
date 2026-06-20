@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.Errors;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.CommandServices;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Commands;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.Shared.Resources;
@@ -17,9 +19,20 @@ namespace Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST;
 [Produces("application/json")]
 public class FoodsController(
     IFoodCommandService commandService,
+    IFoodQueryService queryService,
     IFoodImportCommandService importService,
     IStringLocalizer<SharedResource> localizer) : ControllerBase
 {
+    [HttpGet]
+    [AllowAnonymous]
+    [SwaggerOperation("Search food catalog by name")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> SearchFood([FromQuery] string query = "", [FromQuery] string language = "en")
+    {
+        var foods = await queryService.Handle(new SearchFoodQuery(query, language));
+        return Ok(foods.Select(FoodResourceAssembler.ToSearchResource));
+    }
+
     [HttpPost]
     [Authorize] // TODO: restrict to admin role once a roles system exists.
     [Consumes("application/json")]
