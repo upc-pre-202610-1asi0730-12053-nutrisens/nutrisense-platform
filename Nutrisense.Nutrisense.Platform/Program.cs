@@ -16,6 +16,17 @@ using Nutrisense.Nutrisense.Platform.IAM.Domain.Services;
 using Nutrisense.Nutrisense.Platform.IAM.Infrastructure.Hashing.BCrypt;
 using Nutrisense.Nutrisense.Platform.IAM.Infrastructure.Persistence.EFC.Repositories;
 using Nutrisense.Nutrisense.Platform.IAM.Infrastructure.Tokens.JWT;
+// BodyHealthMetrics BC
+using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Application.Acl;
+using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Interfaces.Acl;
+using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Application.Internal.CommandServices;
+using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Application.Internal.QueryServices;
+using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Application.CommandServices;
+using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Application.QueryServices;
+using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Domain.Repositories;
+using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Domain.Services;
+using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Infrastructure.Calculators;
+using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Infrastructure.Persistence.EFC.Repositories;
 // Shared
 using Nutrisense.Nutrisense.Platform.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Repositories;
@@ -163,6 +174,13 @@ builder.Services.AddScoped<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<IUserCommandService, UserCommandService>();
 builder.Services.AddScoped<IUserQueryService, UserQueryService>();
 builder.Services.AddScoped<IIamContextFacade, IamContextFacade>();
+
+// BodyHealthMetrics Bounded Context
+builder.Services.AddScoped<IBodyMetricsRepository, BodyMetricsRepository>();
+builder.Services.AddScoped<IBodyMetricsCalculator, MifflinStJeorBodyMetricsCalculator>();
+builder.Services.AddScoped<IBodyMetricsCommandService, BodyMetricsCommandService>();
+builder.Services.AddScoped<IBodyMetricsQueryService, BodyMetricsQueryService>();
+builder.Services.AddScoped<IBodyHealthMetricsContextFacade, BodyHealthMetricsContextFacade>();
 
 var app = builder.Build();
 
