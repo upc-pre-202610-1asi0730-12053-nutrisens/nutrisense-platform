@@ -6,6 +6,7 @@ using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Commands;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Transform;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST;
@@ -22,20 +23,22 @@ public class LocationPreferencesController(
 {
     [HttpGet("by-user/{userId:int}")]
     [SwaggerOperation(Summary = "Get user location", Description = "Retrieve location preferences for a user.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Location preferences retrieved successfully.", typeof(LocationPreferenceResource))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "No location preferences were found for this user.", typeof(ErrorResponse))]
     public async Task<IActionResult> GetByUser(int userId)
     {
         var lp = await queryService.Handle(new GetLocationPreferenceByUserIdQuery(userId));
-        return lp is null ? NotFound() : Ok(LocationPreferenceAssembler.ToResource(lp));
+        return lp is null ? NotFound(new ErrorResponse("No location preferences were found for this user.")) : Ok(LocationPreferenceAssembler.ToResource(lp));
     }
 
     [HttpPut("{userId:int}/travel-mode/enable")]
     [Consumes("application/json")]
     [SwaggerOperation(Summary = "Enable travel mode", Description = "Enable travel mode for a user in a specific city.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status402PaymentRequired)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Travel mode enabled successfully. Returns the updated location preferences.", typeof(LocationPreferenceResource))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
+    [SwaggerResponse(StatusCodes.Status402PaymentRequired, "Your current plan does not allow enabling travel mode.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The requested city was not found.", typeof(ErrorResponse))]
     public async Task<IActionResult> EnableTravelMode(int userId, [FromBody] EnableTravelModeResource resource)
     {
         var result = await commandService.Handle(new EnableTravelModeCommand(userId, resource.CityId));
@@ -44,16 +47,17 @@ public class LocationPreferencesController(
             error => error switch
             {
                 Application.Errors.EnableTravelModeError.PlanNotSufficient =>
-                    StatusCode(StatusCodes.Status402PaymentRequired, new { error = error.ToString() }),
-                Application.Errors.EnableTravelModeError.CityNotFound => NotFound(new { error = error.ToString() }),
+                    StatusCode(StatusCodes.Status402PaymentRequired, new ErrorResponse("Your current plan does not allow enabling travel mode.")),
+                Application.Errors.EnableTravelModeError.CityNotFound => NotFound(new ErrorResponse("The requested city was not found.")),
                 _ => StatusCode(StatusCodes.Status500InternalServerError)
             });
     }
 
     [HttpPut("{userId:int}/travel-mode/disable")]
     [SwaggerOperation(Summary = "Disable travel mode", Description = "Disable travel mode for a user and return to home city.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Travel mode disabled successfully. Returns the updated location preferences.", typeof(LocationPreferenceResource))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "No location preferences were found for this user.", typeof(ErrorResponse))]
     public async Task<IActionResult> DisableTravelMode(int userId)
     {
         var result = await commandService.Handle(new DisableTravelModeCommand(userId));
@@ -61,7 +65,7 @@ public class LocationPreferencesController(
             lp => (IActionResult)Ok(LocationPreferenceAssembler.ToResource(lp)),
             error => error switch
             {
-                Application.Errors.DisableTravelModeError.LocationNotFound => NotFound(),
+                Application.Errors.DisableTravelModeError.LocationNotFound => NotFound(new ErrorResponse("No location preferences were found for this user.")),
                 _ => StatusCode(StatusCodes.Status500InternalServerError)
             });
     }
@@ -69,21 +73,23 @@ public class LocationPreferencesController(
     [HttpPost("{userId:int}/detect")]
     [Consumes("application/json")]
     [SwaggerOperation(Summary = "Detect location", Description = "Detect and set a user's current location from coordinates.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Location detected and set successfully. Returns the updated location preferences.", typeof(LocationPreferenceResource))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
+    [SwaggerResponse(StatusCodes.Status422UnprocessableEntity, "The location could not be detected from the provided coordinates.", typeof(ErrorResponse))]
     public async Task<IActionResult> DetectLocation(int userId, [FromBody] DetectLocationResource resource)
     {
         var result = await commandService.Handle(new DetectLocationCommand(userId, resource.Lat, resource.Lng));
         return result.Fold(
             lp => (IActionResult)Ok(LocationPreferenceAssembler.ToResource(lp)),
-            error => UnprocessableEntity(new { error = error.ToString() }));
+            error => UnprocessableEntity(new ErrorResponse("The location could not be detected from the provided coordinates.")));
     }
 
     [HttpPut("{userId:int}/home-city")]
     [Consumes("application/json")]
     [SwaggerOperation(Summary = "Set home city", Description = "Set the home city for a user.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Home city set successfully. Returns the updated location preferences.", typeof(LocationPreferenceResource))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The requested city was not found.", typeof(ErrorResponse))]
     public async Task<IActionResult> SetHomeCity(int userId, [FromBody] SetHomeCityResource resource)
     {
         var result = await commandService.Handle(new SetHomeCityCommand(userId, resource.CityId));
@@ -91,7 +97,7 @@ public class LocationPreferencesController(
             lp => (IActionResult)Ok(LocationPreferenceAssembler.ToResource(lp)),
             error => error switch
             {
-                Application.Errors.SetHomeCityError.CityNotFound => NotFound(new { error = error.ToString() }),
+                Application.Errors.SetHomeCityError.CityNotFound => NotFound(new ErrorResponse("The requested city was not found.")),
                 _ => StatusCode(StatusCodes.Status500InternalServerError)
             });
     }

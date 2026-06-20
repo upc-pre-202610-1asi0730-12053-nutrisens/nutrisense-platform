@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Queries;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Interfaces.REST.Transform;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -16,7 +17,7 @@ public class SubscriptionPlansController(ISubscriptionPlanQueryService queryServ
 {
     [HttpGet]
     [SwaggerOperation(Summary = "Get all subscription plans", Description = "Returns a list of all available subscription plans with pricing and features.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Subscription plans retrieved successfully.", typeof(SubscriptionPlanResource[]))]
     public async Task<IActionResult> GetAll()
     {
         var plans = await queryService.Handle(new GetAllSubscriptionPlansQuery());
@@ -25,8 +26,8 @@ public class SubscriptionPlansController(ISubscriptionPlanQueryService queryServ
 
     [HttpGet("{key}")]
     [SwaggerOperation(Summary = "Get plan by key", Description = "Retrieves a specific subscription plan by its unique key identifier.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Subscription plan retrieved successfully.", typeof(SubscriptionPlanResource))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "No subscription plan was found with the specified key.")]
     public async Task<IActionResult> GetByKey(string key)
     {
         var plan = await queryService.Handle(new GetSubscriptionPlanByKeyQuery(key));

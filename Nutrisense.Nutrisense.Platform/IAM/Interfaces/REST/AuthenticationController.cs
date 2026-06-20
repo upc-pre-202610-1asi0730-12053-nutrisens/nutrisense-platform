@@ -4,6 +4,7 @@ using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.IAM.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Transform;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -21,9 +22,10 @@ public class AuthenticationController(
 {
     [HttpPost("sign-up")]
     [SwaggerOperation(Summary = "Register a new user account", Description = "Creates a new user account with email, password, and initial profile information.")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [SwaggerResponse(StatusCodes.Status201Created, "Account created successfully. Returns the newly created user profile.", typeof(UserResource))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "The email address format is invalid or the password does not meet the security requirements.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status409Conflict, "An account with this email address already exists.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status500InternalServerError, "An unexpected server error occurred while creating the account.", typeof(ErrorResponse))]
     public async Task<IActionResult> SignUp([FromBody] RegisterUserResource resource)
     {
         var command = RegisterUserCommandAssembler.ToCommand(resource);
@@ -33,9 +35,11 @@ public class AuthenticationController(
 
     [HttpPost("sign-in")]
     [SwaggerOperation(Summary = "Authenticate user", Description = "Verifies credentials and returns authentication token and session ID.")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerResponse(StatusCodes.Status200OK, "Authenticated successfully. Returns the user id, JWT token and session id.", typeof(LoginResponseResource))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "The request body is invalid or missing required fields.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "The email or password is incorrect.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "No account exists with the provided email address.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status500InternalServerError, "An unexpected server error occurred while authenticating.", typeof(ErrorResponse))]
     public async Task<IActionResult> SignIn([FromBody] LoginUserResource resource)
     {
         var command = LoginUserCommandAssembler.ToCommand(resource);
