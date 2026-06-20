@@ -43,4 +43,15 @@ public class PaymentMethodsController(
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
+
+    [HttpDelete("{id:int}")]
+    [SwaggerOperation(Summary = "Delete payment method", Description = "Removes a payment method from a user's account. Returns 204 on success.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Remove(int id)
+    {
+        var removed = await commandService.RemoveAsync(id);
+        return removed ? NoContent() : NotFound();
+    }
 }
