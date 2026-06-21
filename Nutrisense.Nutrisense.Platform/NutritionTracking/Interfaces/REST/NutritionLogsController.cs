@@ -8,7 +8,7 @@ using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
 
@@ -23,7 +23,7 @@ namespace Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST;
 public class NutritionLogsController(
     INutritionLogCommandService commandService,
     INutritionLogQueryService queryService,
-    IStringLocalizer<SharedResource> localizer) : ControllerBase
+    IStringLocalizer<NutritionTrackingMessages> localizer) : ControllerBase
 {
     [HttpGet("by-user/{userId:int}")]
     [SwaggerOperation("Get all nutrition log entries for a user on a specific date")]
@@ -33,7 +33,7 @@ public class NutritionLogsController(
     public async Task<IActionResult> GetByUserAndDate(int userId, [FromQuery] string date)
     {
         if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
-            return BadRequest(new ErrorResponse("Invalid date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
 
         var logs = await queryService.Handle(new GetNutritionLogByUserAndDateQuery(userId, parsedDate));
         return Ok(logs.Select(NutritionLogResourceAssembler.ToResource));
@@ -62,7 +62,7 @@ public class NutritionLogsController(
     public async Task<IActionResult> GetDailySummary(int userId, [FromQuery] string date)
     {
         if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
-            return BadRequest(new ErrorResponse("Invalid date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
 
         var summary = await queryService.Handle(new GetDailyMacroSummaryQuery(userId, parsedDate));
         return Ok(NutritionLogResourceAssembler.ToSummaryResource(summary));
@@ -82,12 +82,12 @@ public class NutritionLogsController(
         DateOnly? toDate = null;
 
         if (from is not null && !DateOnly.TryParseExact(from, "yyyy-MM-dd", out var parsedFrom))
-            return BadRequest(new ErrorResponse("Invalid 'from' date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidFromDateFormat"].Value));
         else if (from is not null)
             fromDate = DateOnly.ParseExact(from, "yyyy-MM-dd", null);
 
         if (to is not null && !DateOnly.TryParseExact(to, "yyyy-MM-dd", out var parsedTo))
-            return BadRequest(new ErrorResponse("Invalid 'to' date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidToDateFormat"].Value));
         else if (to is not null)
             toDate = DateOnly.ParseExact(to, "yyyy-MM-dd", null);
 
@@ -124,7 +124,7 @@ public class NutritionLogsController(
     public async Task<IActionResult> LogMeal([FromBody] LogMealResource resource)
     {
         if (!DateOnly.TryParseExact(resource.Date, "yyyy-MM-dd", out _))
-            return BadRequest(new ErrorResponse("Invalid date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
 
         var command = LogMealCommandAssembler.ToCommand(resource);
         var result = await commandService.Handle(command);
@@ -141,7 +141,7 @@ public class NutritionLogsController(
     public async Task<IActionResult> SelectMenuOption([FromBody] SelectMenuOptionResource resource)
     {
         if (!DateOnly.TryParseExact(resource.Date, "yyyy-MM-dd", out _))
-            return BadRequest(new ErrorResponse("Invalid date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
 
         var command = SelectMenuOptionCommandAssembler.ToCommand(resource);
         var result = await commandService.Handle(command);
@@ -171,7 +171,7 @@ public class NutritionLogsController(
     public async Task<IActionResult> ConfirmScan([FromBody] ConfirmScanResource resource)
     {
         if (!DateOnly.TryParseExact(resource.Date, "yyyy-MM-dd", out _))
-            return BadRequest(new ErrorResponse("Invalid date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
 
         var command = ConfirmScanCommandAssembler.ToCommand(resource);
         var result = await commandService.Handle(command);

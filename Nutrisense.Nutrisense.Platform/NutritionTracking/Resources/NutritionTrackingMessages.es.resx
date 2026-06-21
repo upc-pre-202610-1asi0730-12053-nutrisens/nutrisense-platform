@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="UnexpectedError" xml:space="preserve">
+        <value>Ocurrió un error inesperado.</value>
+    </data>
+    <data name="Unauthorized" xml:space="preserve">
+        <value>No autorizado</value>
+    </data>
+    <data name="NutritionLogEntryNotFoundTitle" xml:space="preserve">
+        <value>Entrada de diario no encontrada</value>
+    </data>
+    <data name="NutritionLogEntryNotFound" xml:space="preserve">
+        <value>La entrada de diario nutricional solicitada no existe.</value>
+    </data>
+    <data name="NutritionLogEntryUnauthorized" xml:space="preserve">
+        <value>No tiene permiso para modificar esta entrada de diario.</value>
+    </data>
+    <data name="NutritionLogEntryInvalidQuantity" xml:space="preserve">
+        <value>La cantidad proporcionada no es válida.</value>
+    </data>
+    <data name="NutritionLogEntryDeletedTitle" xml:space="preserve">
+        <value>Entrada de diario no encontrada</value>
+    </data>
+    <data name="NutritionLogEntryDeleteUnauthorized" xml:space="preserve">
+        <value>No tiene permiso para eliminar esta entrada de diario.</value>
+    </data>
+    <data name="InvalidDateFormat" xml:space="preserve">
+        <value>El formato de fecha no es válido. Use yyyy-MM-dd.</value>
+    </data>
+    <data name="InvalidFromDateFormat" xml:space="preserve">
+        <value>El formato de la fecha 'from' no es válido. Use yyyy-MM-dd.</value>
+    </data>
+    <data name="InvalidToDateFormat" xml:space="preserve">
+        <value>El formato de la fecha 'to' no es válido. Use yyyy-MM-dd.</value>
+    </data>
+    <data name="FoodNotFound" xml:space="preserve">
+        <value>Alimento no encontrado.</value>
+    </data>
+    <data name="InvalidMealType" xml:space="preserve">
+        <value>El tipo de comida no es válido.</value>
+    </data>
+    <data name="InvalidQuantity" xml:space="preserve">
+        <value>La cantidad no es válida.</value>
+    </data>
+    <data name="InvalidScanConfirmationData" xml:space="preserve">
+        <value>Los datos de confirmación del escaneo no son válidos.</value>
+    </data>
+    <data name="InvalidMenuSelectionData" xml:space="preserve">
+        <value>Los datos de selección del menú no son válidos.</value>
+    </data>
+    <data name="MenuScanFailed" xml:space="preserve">
+        <value>Falló el análisis del menú.</value>
+    </data>
+    <data name="DishScanFailed" xml:space="preserve">
+        <value>Falló el análisis del plato.</value>
+    </data>
+    <data name="DetectedFoodNotFound" xml:space="preserve">
+        <value>El alimento detectado no se encuentra en el catálogo.</value>
+    </data>
+    <data name="FoodDuplicateKey" xml:space="preserve">
+        <value>Ya existe un alimento con esta clave.</value>
+    </data>
+    <data name="InvalidFoodSource" xml:space="preserve">
+        <value>La fuente del alimento no es válida.</value>
+    </data>
+    <data name="UsdaServiceUnavailable" xml:space="preserve">
+        <value>El servicio de datos de alimentos de USDA no está disponible en este momento. Inténtelo de nuevo más tarde.</value>
+    </data>
+    <data name="FoodImportFailed" xml:space="preserve">
+        <value>No se pudo procesar la solicitud de importación de alimentos.</value>
+    </data>
+</root>
