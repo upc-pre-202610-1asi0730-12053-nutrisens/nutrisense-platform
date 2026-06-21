@@ -8,7 +8,7 @@ using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST;
@@ -24,7 +24,7 @@ namespace Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST;
 public class ActivityLogsController(
     IActivityLogCommandService commandService,
     IActivityLogQueryService queryService,
-    IStringLocalizer<SharedResource> localizer) : ControllerBase
+    IStringLocalizer<ActivityWearableMessages> localizer) : ControllerBase
 {
     /// <summary>Logs a manual activity and triggers the caloric balance recalculation chain.</summary>
     /// <param name="resource">The activity payload to log.</param>
@@ -38,7 +38,7 @@ public class ActivityLogsController(
     public async Task<IActionResult> LogManualActivity([FromBody] LogManualActivityResource resource)
     {
         if (!DateOnly.TryParseExact(resource.Date, "yyyy-MM-dd", out _))
-            return BadRequest(new ErrorResponse("Invalid date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
 
         var command = ActivityLogAssembler.ToCommand(resource);
         var result = await commandService.Handle(command);
@@ -64,12 +64,12 @@ public class ActivityLogsController(
         DateOnly? toDate = null;
 
         if (from is not null && !DateOnly.TryParseExact(from, "yyyy-MM-dd", out var parsedFrom))
-            return BadRequest(new ErrorResponse("Invalid 'from' date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidFromDateFormat"].Value));
         else if (from is not null)
             fromDate = DateOnly.ParseExact(from, "yyyy-MM-dd", null);
 
         if (to is not null && !DateOnly.TryParseExact(to, "yyyy-MM-dd", out var parsedTo))
-            return BadRequest(new ErrorResponse("Invalid 'to' date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidToDateFormat"].Value));
         else if (to is not null)
             toDate = DateOnly.ParseExact(to, "yyyy-MM-dd", null);
 
@@ -89,7 +89,7 @@ public class ActivityLogsController(
     public async Task<IActionResult> GetDailySummary(int userId, [FromQuery] string date)
     {
         if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
-            return BadRequest(new ErrorResponse("Invalid date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
 
         var summary = await queryService.Handle(new GetDailyActivitySummaryQuery(userId, parsedDate));
         return Ok(ActivityLogAssembler.ToSummaryResource(summary));

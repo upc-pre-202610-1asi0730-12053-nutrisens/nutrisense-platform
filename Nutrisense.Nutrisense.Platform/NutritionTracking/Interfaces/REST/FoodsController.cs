@@ -9,7 +9,7 @@ using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST;
@@ -22,7 +22,7 @@ public class FoodsController(
     IFoodCommandService commandService,
     IFoodQueryService queryService,
     IFoodImportCommandService importService,
-    IStringLocalizer<SharedResource> localizer) : ControllerBase
+    IStringLocalizer<NutritionTrackingMessages> localizer) : ControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
@@ -75,7 +75,7 @@ public class FoodsController(
         return result.Fold<IActionResult>(
             imported => Ok(new { imported }),
             error => error == ImportFoodsError.UsdaUnavailable
-                ? StatusCode(StatusCodes.Status502BadGateway, new ErrorResponse("The USDA food data service is currently unavailable. Please try again later."))
-                : BadRequest(new ErrorResponse("The food import request could not be processed.")));
+                ? StatusCode(StatusCodes.Status502BadGateway, new ErrorResponse(localizer["UsdaServiceUnavailable"].Value))
+                : BadRequest(new ErrorResponse(localizer["FoodImportFailed"].Value)));
     }
 }

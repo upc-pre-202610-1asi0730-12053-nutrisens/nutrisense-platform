@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Commands;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Transform;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -19,7 +21,8 @@ namespace Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST;
 [Produces("application/json")]
 public class RecommendationsController(
     IRecsEngineCommandService commandService,
-    IRecsEngineQueryService queryService) : ControllerBase
+    IRecsEngineQueryService queryService,
+    IStringLocalizer<SmartRecommendationsMessages> localizer) : ControllerBase
 {
     [HttpGet("by-user/{userId:int}")]
     [SwaggerOperation(Summary = "Get active recommendations", Description = "Retrieve active recommendation cards for a user.")]
@@ -42,6 +45,6 @@ public class RecommendationsController(
         var result = await commandService.Handle(new GenerateRecommendationCommand(userId, resource.Trigger));
         return result.Fold(
             card => (IActionResult)Ok(RecommendationCardAssembler.ToResource(card)),
-            error => UnprocessableEntity(new ErrorResponse("A recommendation could not be generated for the given trigger.")));
+            error => UnprocessableEntity(new ErrorResponse(localizer["RecommendationGenerationFailed"].Value)));
     }
 }

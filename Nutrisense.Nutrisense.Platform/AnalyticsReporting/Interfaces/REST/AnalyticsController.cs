@@ -10,7 +10,7 @@ using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Interfaces.REST.Resource
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Nutrisense.Nutrisense.Platform.AnalyticsReporting.Interfaces.REST;
@@ -25,7 +25,7 @@ namespace Nutrisense.Nutrisense.Platform.AnalyticsReporting.Interfaces.REST;
 public class AnalyticsController(
     IAnalyticsCommandService commandService,
     IAnalyticsQueryService queryService,
-    IStringLocalizer<SharedResource> localizer) : ControllerBase
+    IStringLocalizer<AnalyticsReportingMessages> localizer) : ControllerBase
 {
     [HttpGet("dashboard/by-user/{userId:int}")]
     [SwaggerOperation(Summary = "Get dashboard data for a user", Description = "Retrieves dashboard metrics for a specific date including calories, macros, adherence and streak. Also records the dashboard view and updates user's streak.")]
@@ -35,7 +35,7 @@ public class AnalyticsController(
     public async Task<IActionResult> GetDashboard(int userId, [FromQuery] string date)
     {
         if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
-            return BadRequest(new ErrorResponse("Invalid date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
 
         await commandService.Handle(new ViewDashboardCommand(userId));
 
@@ -54,7 +54,7 @@ public class AnalyticsController(
     {
         if (!DateOnly.TryParseExact(from, "yyyy-MM-dd", out var fromDate)
             || !DateOnly.TryParseExact(to, "yyyy-MM-dd", out var toDate))
-            return BadRequest(new ErrorResponse("Invalid date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
 
         var data = await queryService.Handle(new GetProgressChartQuery(userId, fromDate, toDate));
 
@@ -101,7 +101,7 @@ public class AnalyticsController(
     {
         if (!DateOnly.TryParseExact(from, "yyyy-MM-dd", out var fromDate)
             || !DateOnly.TryParseExact(to, "yyyy-MM-dd", out var toDate))
-            return BadRequest(new ErrorResponse("Invalid date format. Use yyyy-MM-dd."));
+            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
 
         var result = await commandService.Handle(new ExportReportPdfCommand(userId, fromDate, toDate));
 

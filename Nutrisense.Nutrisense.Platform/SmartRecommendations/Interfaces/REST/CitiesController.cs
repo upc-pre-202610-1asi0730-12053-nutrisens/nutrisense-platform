@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Commands;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Transform;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -17,7 +19,8 @@ namespace Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST;
 [Produces("application/json")]
 public class CitiesController(
     IRecsEngineQueryService queryService,
-    IRecsEngineCommandService commandService) : ControllerBase
+    IRecsEngineCommandService commandService,
+    IStringLocalizer<SmartRecommendationsMessages> localizer) : ControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
@@ -63,7 +66,7 @@ public class CitiesController(
             resource.Name, resource.NameEn, resource.NameEs, resource.Country, resource.Lat, resource.Lng));
         return result.Fold(
             city => (IActionResult)Ok(CityAssembler.ToResource(city)),
-            error => UnprocessableEntity(new ErrorResponse("The city could not be imported from the provided data.")));
+            error => UnprocessableEntity(new ErrorResponse(localizer["CityImportFailed"].Value)));
     }
 
     [HttpGet("{id:int}/weather")]

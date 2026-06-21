@@ -3,7 +3,7 @@ using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.Errors;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Transform;
 
@@ -16,13 +16,13 @@ public static class DisconnectDeviceResultAssembler
     /// <returns>The corresponding <see cref="IActionResult"/>.</returns>
     public static IActionResult ToActionResult(
         Result<bool, DisconnectDeviceError> result,
-        IStringLocalizer<SharedResource> localizer) =>
+        IStringLocalizer<ActivityWearableMessages> localizer) =>
         result switch
         {
             Result<bool, DisconnectDeviceError>.Success =>
                 new NoContentResult(),
             Result<bool, DisconnectDeviceError>.Failure { Error: DisconnectDeviceError.ConnectionNotFound } =>
-                new NotFoundObjectResult(new ErrorResponse("Wearable connection not found.")),
+                new NotFoundObjectResult(new ErrorResponse(localizer["WearableConnectionNotFound"].Value)),
             _ =>
                 new ObjectResult(new ErrorResponse(localizer["UnexpectedError"].Value))
                     { StatusCode = StatusCodes.Status500InternalServerError }

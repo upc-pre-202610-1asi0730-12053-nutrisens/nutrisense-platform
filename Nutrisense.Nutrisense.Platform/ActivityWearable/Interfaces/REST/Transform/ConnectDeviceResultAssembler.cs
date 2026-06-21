@@ -4,7 +4,7 @@ using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.Errors;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Transform;
 
@@ -17,18 +17,18 @@ public static class ConnectDeviceResultAssembler
     /// <returns>The corresponding <see cref="IActionResult"/>.</returns>
     public static IActionResult ToActionResult(
         Result<WearableConnection, ConnectDeviceError> result,
-        IStringLocalizer<SharedResource> localizer) =>
+        IStringLocalizer<ActivityWearableMessages> localizer) =>
         result switch
         {
             Result<WearableConnection, ConnectDeviceError>.Success s =>
                 new ObjectResult(WearableConnectionAssembler.ToResource(s.Value))
                     { StatusCode = StatusCodes.Status201Created },
             Result<WearableConnection, ConnectDeviceError>.Failure { Error: ConnectDeviceError.AlreadyConnected } =>
-                new ConflictObjectResult(new ErrorResponse("Device already connected for this provider.")),
+                new ConflictObjectResult(new ErrorResponse(localizer["DeviceAlreadyConnected"].Value)),
             Result<WearableConnection, ConnectDeviceError>.Failure { Error: ConnectDeviceError.AuthorizationFailed } =>
-                new BadRequestObjectResult(new ErrorResponse("OAuth authorization failed.")),
+                new BadRequestObjectResult(new ErrorResponse(localizer["OAuthAuthorizationFailed"].Value)),
             Result<WearableConnection, ConnectDeviceError>.Failure { Error: ConnectDeviceError.InvalidProvider } =>
-                new BadRequestObjectResult(new ErrorResponse("Invalid wearable provider.")),
+                new BadRequestObjectResult(new ErrorResponse(localizer["InvalidWearableProvider"].Value)),
             _ =>
                 new ObjectResult(new ErrorResponse(localizer["UnexpectedError"].Value))
                     { StatusCode = StatusCodes.Status500InternalServerError }
