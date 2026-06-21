@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.Errors;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.QueryServices;
@@ -7,6 +8,7 @@ using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Commands;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Transform;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -19,7 +21,8 @@ namespace Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST;
 public class RecipesController(
     IRecsEngineCommandService commandService,
     IRecsEngineQueryService queryService,
-    IRecipeImportCommandService importService) : ControllerBase
+    IRecipeImportCommandService importService,
+    IStringLocalizer<SmartRecommendationsMessages> localizer) : ControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
@@ -54,7 +57,7 @@ public class RecipesController(
         var result = await commandService.Handle(new SuggestRecipeCommand(userId));
         return result.Fold(
             recipe => (IActionResult)Ok(RecipeAssembler.ToResource(recipe)),
-            error => UnprocessableEntity(new ErrorResponse("A recipe could not be suggested for this user.")));
+            error => UnprocessableEntity(new ErrorResponse(localizer["RecipeSuggestionFailed"].Value)));
     }
 
     [HttpPost("import")]
@@ -72,7 +75,7 @@ public class RecipesController(
         return result.Fold<IActionResult>(
             generated => Ok(new { generated }),
             error => error == RecipeImportError.InsufficientIngredients
-                ? UnprocessableEntity(new ErrorResponse("There are not enough ingredients to generate recipes. Import foods first."))
-                : BadRequest(new ErrorResponse("The recipe import request could not be processed.")));
+                ? UnprocessableEntity(new ErrorResponse(localizer["InsufficientIngredientsForRecipes"].Value))
+                : BadRequest(new ErrorResponse(localizer["RecipeImportRequestFailed"].Value)));
     }
 }

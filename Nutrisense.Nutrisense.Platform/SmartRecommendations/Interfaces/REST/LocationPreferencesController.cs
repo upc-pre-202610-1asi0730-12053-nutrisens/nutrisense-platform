@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Commands;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Transform;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -19,7 +21,8 @@ namespace Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST;
 [Produces("application/json")]
 public class LocationPreferencesController(
     IRecsEngineCommandService commandService,
-    IRecsEngineQueryService queryService) : ControllerBase
+    IRecsEngineQueryService queryService,
+    IStringLocalizer<SmartRecommendationsMessages> localizer) : ControllerBase
 {
     [HttpGet("by-user/{userId:int}")]
     [SwaggerOperation(Summary = "Get user location", Description = "Retrieve location preferences for a user.")]
@@ -29,7 +32,7 @@ public class LocationPreferencesController(
     public async Task<IActionResult> GetByUser(int userId)
     {
         var lp = await queryService.Handle(new GetLocationPreferenceByUserIdQuery(userId));
-        return lp is null ? NotFound(new ErrorResponse("No location preferences were found for this user.")) : Ok(LocationPreferenceAssembler.ToResource(lp));
+        return lp is null ? NotFound(new ErrorResponse(localizer["LocationPreferencesNotFound"].Value)) : Ok(LocationPreferenceAssembler.ToResource(lp));
     }
 
     [HttpPut("{userId:int}/travel-mode/enable")]
@@ -47,8 +50,8 @@ public class LocationPreferencesController(
             error => error switch
             {
                 Application.Errors.EnableTravelModeError.PlanNotSufficient =>
-                    StatusCode(StatusCodes.Status402PaymentRequired, new ErrorResponse("Your current plan does not allow enabling travel mode.")),
-                Application.Errors.EnableTravelModeError.CityNotFound => NotFound(new ErrorResponse("The requested city was not found.")),
+                    StatusCode(StatusCodes.Status402PaymentRequired, new ErrorResponse(localizer["PlanDoesNotAllowTravelMode"].Value)),
+                Application.Errors.EnableTravelModeError.CityNotFound => NotFound(new ErrorResponse(localizer["CityNotFound"].Value)),
                 _ => StatusCode(StatusCodes.Status500InternalServerError)
             });
     }
@@ -65,7 +68,7 @@ public class LocationPreferencesController(
             lp => (IActionResult)Ok(LocationPreferenceAssembler.ToResource(lp)),
             error => error switch
             {
-                Application.Errors.DisableTravelModeError.LocationNotFound => NotFound(new ErrorResponse("No location preferences were found for this user.")),
+                Application.Errors.DisableTravelModeError.LocationNotFound => NotFound(new ErrorResponse(localizer["LocationPreferencesNotFound"].Value)),
                 _ => StatusCode(StatusCodes.Status500InternalServerError)
             });
     }
@@ -81,7 +84,7 @@ public class LocationPreferencesController(
         var result = await commandService.Handle(new DetectLocationCommand(userId, resource.Lat, resource.Lng));
         return result.Fold(
             lp => (IActionResult)Ok(LocationPreferenceAssembler.ToResource(lp)),
-            error => UnprocessableEntity(new ErrorResponse("The location could not be detected from the provided coordinates.")));
+            error => UnprocessableEntity(new ErrorResponse(localizer["LocationDetectionFailed"].Value)));
     }
 
     [HttpPut("{userId:int}/home-city")]
@@ -97,7 +100,7 @@ public class LocationPreferencesController(
             lp => (IActionResult)Ok(LocationPreferenceAssembler.ToResource(lp)),
             error => error switch
             {
-                Application.Errors.SetHomeCityError.CityNotFound => NotFound(new ErrorResponse("The requested city was not found.")),
+                Application.Errors.SetHomeCityError.CityNotFound => NotFound(new ErrorResponse(localizer["CityNotFound"].Value)),
                 _ => StatusCode(StatusCodes.Status500InternalServerError)
             });
     }

@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Commands;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Transform;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -19,7 +21,8 @@ namespace Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST;
 [Produces("application/json")]
 public class PantryController(
     IRecsEngineCommandService commandService,
-    IRecsEngineQueryService queryService) : ControllerBase
+    IRecsEngineQueryService queryService,
+    IStringLocalizer<SmartRecommendationsMessages> localizer) : ControllerBase
 {
     [HttpGet("by-user/{userId:int}")]
     [SwaggerOperation(Summary = "Get user pantry", Description = "Retrieve pantry items for a user.")]
@@ -49,8 +52,8 @@ public class PantryController(
             error => error switch
             {
                 Application.Errors.RegisterPantryItemsError.PlanNotSufficient =>
-                    StatusCode(StatusCodes.Status402PaymentRequired, new ErrorResponse("Your current plan does not allow adding more pantry items.")),
-                _ => UnprocessableEntity(new ErrorResponse("The pantry items could not be registered."))
+                    StatusCode(StatusCodes.Status402PaymentRequired, new ErrorResponse(localizer["PlanDoesNotAllowMorePantryItems"].Value)),
+                _ => UnprocessableEntity(new ErrorResponse(localizer["PantryItemsRegistrationFailed"].Value))
             });
     }
 
@@ -66,7 +69,7 @@ public class PantryController(
             pantry => (IActionResult)Ok(PantryAssembler.ToResource(pantry)),
             error => error switch
             {
-                Application.Errors.RemovePantryItemError.ItemNotFound => NotFound(new ErrorResponse("The requested pantry item was not found.")),
+                Application.Errors.RemovePantryItemError.ItemNotFound => NotFound(new ErrorResponse(localizer["PantryItemNotFound"].Value)),
                 _ => StatusCode(StatusCodes.Status500InternalServerError)
             });
     }
@@ -84,7 +87,7 @@ public class PantryController(
             pantry => (IActionResult)Ok(PantryAssembler.ToResource(pantry)),
             error => error switch
             {
-                Application.Errors.UpdatePantryItemError.ItemNotFound => NotFound(new ErrorResponse("The requested pantry item was not found.")),
+                Application.Errors.UpdatePantryItemError.ItemNotFound => NotFound(new ErrorResponse(localizer["PantryItemNotFound"].Value)),
                 _ => StatusCode(StatusCodes.Status500InternalServerError)
             });
     }
