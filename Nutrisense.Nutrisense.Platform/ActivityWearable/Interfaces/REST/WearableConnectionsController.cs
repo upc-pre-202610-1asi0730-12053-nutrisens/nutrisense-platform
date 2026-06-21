@@ -7,7 +7,7 @@ using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Model.Commands;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Transform;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST;
@@ -23,7 +23,7 @@ namespace Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST;
 public class WearableConnectionsController(
     IWearableConnectionCommandService commandService,
     IWearableConnectionQueryService queryService,
-    IStringLocalizer<SharedResource> localizer) : ControllerBase
+    IStringLocalizer<ActivityWearableMessages> localizer) : ControllerBase
 {
     /// <summary>Connects a wearable device and triggers the full activity sync chain.</summary>
     /// <param name="resource">The connect payload carrying the user, provider and OAuth code.</param>

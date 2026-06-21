@@ -4,7 +4,7 @@ using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.Errors;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Transform;
 
@@ -12,16 +12,16 @@ public static class ConfirmScanResultAssembler
 {
     public static IActionResult ToActionResult(
         Result<NutritionLog, ConfirmScanError> result,
-        IStringLocalizer<SharedResource> localizer) =>
+        IStringLocalizer<NutritionTrackingMessages> localizer) =>
         result switch
         {
             Result<NutritionLog, ConfirmScanError>.Success s =>
                 new ObjectResult(NutritionLogResourceAssembler.ToResource(s.Value))
                     { StatusCode = StatusCodes.Status201Created },
             Result<NutritionLog, ConfirmScanError>.Failure { Error: ConfirmScanError.FoodNotFound } =>
-                new NotFoundObjectResult(new ErrorResponse("Food not found.")),
+                new NotFoundObjectResult(new ErrorResponse(localizer["FoodNotFound"].Value)),
             Result<NutritionLog, ConfirmScanError>.Failure { Error: ConfirmScanError.InvalidData } =>
-                new BadRequestObjectResult(new ErrorResponse("Invalid scan confirmation data.")),
+                new BadRequestObjectResult(new ErrorResponse(localizer["InvalidScanConfirmationData"].Value)),
             _ =>
                 new ObjectResult(new ErrorResponse(localizer["UnexpectedError"].Value))
                     { StatusCode = StatusCodes.Status500InternalServerError }

@@ -5,7 +5,7 @@ using Nutrisense.Nutrisense.Platform.IAM.Application.Errors;
 using Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.IAM.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Transform;
 
@@ -13,7 +13,7 @@ public static class LoginUserResultAssembler
 {
     public static IActionResult ToActionResult(
         Result<LoginResult, LoginUserError> result,
-        IStringLocalizer<SharedResource> localizer) =>
+        IStringLocalizer<IAMMessages> localizer) =>
         result switch
         {
             Result<LoginResult, LoginUserError>.Success s =>

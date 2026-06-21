@@ -4,7 +4,7 @@ using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.Errors;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Transform;
 
@@ -12,7 +12,7 @@ public static class UpdateNutritionLogEntryResultAssembler
 {
     public static IActionResult ToActionResult(
         Result<NutritionLog, UpdateNutritionLogEntryError> result,
-        IStringLocalizer<SharedResource> localizer,
+        IStringLocalizer<NutritionTrackingMessages> localizer,
         string instance) =>
         result switch
         {

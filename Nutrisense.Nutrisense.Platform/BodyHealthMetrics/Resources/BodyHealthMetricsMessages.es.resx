@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="BodyMetricsAlreadyExists" xml:space="preserve">
+        <value>Ya existen métricas corporales registradas para este usuario.</value>
+    </data>
+    <data name="InvalidBodyMetricsData" xml:space="preserve">
+        <value>Los datos de métricas corporales proporcionados no son válidos.</value>
+    </data>
+    <data name="BodyMetricsNotFound" xml:space="preserve">
+        <value>No se encontraron métricas corporales para este usuario.</value>
+    </data>
+    <data name="InvalidWeightValue" xml:space="preserve">
+        <value>El valor de peso proporcionado no es válido.</value>
+    </data>
+    <data name="InvalidMeasurementValues" xml:space="preserve">
+        <value>Los valores de medición proporcionados no son válidos.</value>
+    </data>
+    <data name="InvalidGoalData" xml:space="preserve">
+        <value>Los datos del objetivo proporcionados no son válidos.</value>
+    </data>
+    <data name="BmiNotCalculated" xml:space="preserve">
+        <value>El IMC aún no ha sido calculado.</value>
+    </data>
+    <data name="DailyCaloricGoalNotCalculated" xml:space="preserve">
+        <value>El objetivo calórico diario aún no ha sido calculado.</value>
+    </data>
+    <data name="InvalidDateOfBirthFormat" xml:space="preserve">
+        <value>El formato de la fecha de nacimiento no es válido. Use yyyy-MM-dd.</value>
+    </data>
+</root>

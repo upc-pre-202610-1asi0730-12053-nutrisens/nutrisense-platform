@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="EmailAlreadyTaken" xml:space="preserve">
+        <value>Ya existe una cuenta con este correo electrónico.</value>
+    </data>
+    <data name="InvalidCredentials" xml:space="preserve">
+        <value>El correo electrónico o la contraseña son incorrectos.</value>
+    </data>
+    <data name="InvalidEmail" xml:space="preserve">
+        <value>El formato del correo electrónico no es válido.</value>
+    </data>
+    <data name="InvalidGoal" xml:space="preserve">
+        <value>El objetivo de salud seleccionado no es válido.</value>
+    </data>
+    <data name="InvalidProfileData" xml:space="preserve">
+        <value>Los datos de perfil proporcionados no son válidos.</value>
+    </data>
+    <data name="SessionNotFound" xml:space="preserve">
+        <value>La sesión solicitada no existe.</value>
+    </data>
+    <data name="UnexpectedError" xml:space="preserve">
+        <value>Ocurrió un error inesperado.</value>
+    </data>
+    <data name="UserNotFound" xml:space="preserve">
+        <value>No se encontró ninguna cuenta para el identificador proporcionado.</value>
+    </data>
+    <data name="WeakPassword" xml:space="preserve">
+        <value>La contraseña no cumple los requisitos de seguridad: al menos 8 caracteres, incluyendo una mayúscula, una minúscula, un dígito y un carácter especial.</value>
+    </data>
+</root>

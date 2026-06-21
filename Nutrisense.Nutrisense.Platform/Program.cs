@@ -91,7 +91,7 @@ using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Infrastructure.Persisten
 // AnalyticsReporting domain services — aliased to avoid clash with SmartRecommendations
 using AnalyticsServices = Nutrisense.Nutrisense.Platform.AnalyticsReporting.Domain.Services;
 // Shared
-using Nutrisense.Nutrisense.Platform.Resources;
+using Nutrisense.Nutrisense.Platform.Shared.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Infrastructure.Seeding;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Repositories;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Services;

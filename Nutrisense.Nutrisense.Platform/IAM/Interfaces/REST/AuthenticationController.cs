@@ -5,7 +5,7 @@ using Nutrisense.Nutrisense.Platform.IAM.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.IAM.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST;
@@ -18,7 +18,7 @@ namespace Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST;
 [Consumes("application/json")]
 public class AuthenticationController(
     IUserCommandService commandService,
-    IStringLocalizer<SharedResource> localizer) : ControllerBase
+    IStringLocalizer<IAMMessages> localizer) : ControllerBase
 {
     [HttpPost("sign-up")]
     [SwaggerOperation(Summary = "Register a new user account", Description = "Creates a new user account with email, password, and initial profile information.")]

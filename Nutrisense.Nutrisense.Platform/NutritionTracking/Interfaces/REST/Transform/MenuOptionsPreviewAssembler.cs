@@ -5,7 +5,7 @@ using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.Errors;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Transform;
 
@@ -13,7 +13,7 @@ public static class MenuOptionsPreviewAssembler
 {
     public static IActionResult ToActionResult(
         Result<MenuOptionsPreview, ScanMenuPhotoError> result,
-        IStringLocalizer<SharedResource> localizer) =>
+        IStringLocalizer<NutritionTrackingMessages> localizer) =>
         result switch
         {
             Result<MenuOptionsPreview, ScanMenuPhotoError>.Success s =>
@@ -23,7 +23,7 @@ public static class MenuOptionsPreviewAssembler
                         o.CaloriesPer100g, o.ProteinPer100g, o.CarbsPer100g, o.FatPer100g,
                         o.Restrictions, o.IsEstimate)))),
             Result<MenuOptionsPreview, ScanMenuPhotoError>.Failure { Error: ScanMenuPhotoError.ScanFailed } =>
-                new UnprocessableEntityObjectResult(new ErrorResponse("Menu scan failed.")),
+                new UnprocessableEntityObjectResult(new ErrorResponse(localizer["MenuScanFailed"].Value)),
             _ =>
                 new ObjectResult(new ErrorResponse(localizer["UnexpectedError"].Value))
                     { StatusCode = StatusCodes.Status500InternalServerError }

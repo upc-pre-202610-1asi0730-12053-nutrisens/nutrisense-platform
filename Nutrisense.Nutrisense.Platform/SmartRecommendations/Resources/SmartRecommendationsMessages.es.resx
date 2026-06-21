@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="CityImportFailed" xml:space="preserve">
+        <value>No se pudo importar la ciudad a partir de los datos proporcionados.</value>
+    </data>
+    <data name="CityNotFound" xml:space="preserve">
+        <value>No se encontró la ciudad solicitada.</value>
+    </data>
+    <data name="LocationPreferencesNotFound" xml:space="preserve">
+        <value>No se encontraron preferencias de ubicación para este usuario.</value>
+    </data>
+    <data name="LocationDetectionFailed" xml:space="preserve">
+        <value>No se pudo detectar la ubicación a partir de las coordenadas proporcionadas.</value>
+    </data>
+    <data name="PlanDoesNotAllowTravelMode" xml:space="preserve">
+        <value>Su plan actual no permite activar el modo de viaje.</value>
+    </data>
+    <data name="PlanDoesNotAllowMorePantryItems" xml:space="preserve">
+        <value>Su plan actual no permite agregar más artículos a la despensa.</value>
+    </data>
+    <data name="PantryItemsRegistrationFailed" xml:space="preserve">
+        <value>No se pudieron registrar los artículos de la despensa.</value>
+    </data>
+    <data name="PantryItemNotFound" xml:space="preserve">
+        <value>No se encontró el artículo de despensa solicitado.</value>
+    </data>
+    <data name="RecipeSuggestionFailed" xml:space="preserve">
+        <value>No se pudo sugerir una receta para este usuario.</value>
+    </data>
+    <data name="InsufficientIngredientsForRecipes" xml:space="preserve">
+        <value>No hay suficientes ingredientes para generar recetas. Importe alimentos primero.</value>
+    </data>
+    <data name="RecipeImportRequestFailed" xml:space="preserve">
+        <value>No se pudo procesar la solicitud de importación de recetas.</value>
+    </data>
+    <data name="RecommendationGenerationFailed" xml:space="preserve">
+        <value>No se pudo generar una recomendación para el disparador indicado.</value>
+    </data>
+</root>

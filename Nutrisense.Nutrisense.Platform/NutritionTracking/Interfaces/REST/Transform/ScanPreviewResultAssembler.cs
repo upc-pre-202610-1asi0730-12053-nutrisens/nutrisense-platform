@@ -5,7 +5,7 @@ using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.Errors;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Transform;
 
@@ -13,7 +13,7 @@ public static class ScanPreviewResultAssembler
 {
     public static IActionResult ToActionResult(
         Result<ScanPreviewResult, ScanMealPhotoError> result,
-        IStringLocalizer<SharedResource> localizer) =>
+        IStringLocalizer<NutritionTrackingMessages> localizer) =>
         result switch
         {
             Result<ScanPreviewResult, ScanMealPhotoError>.Success s =>
@@ -23,9 +23,9 @@ public static class ScanPreviewResultAssembler
                         i.CaloriesPer100g, i.ProteinPer100g, i.CarbsPer100g, i.FatPer100g,
                         i.IsEstimate)))),
             Result<ScanPreviewResult, ScanMealPhotoError>.Failure { Error: ScanMealPhotoError.ScanFailed } =>
-                new UnprocessableEntityObjectResult(new ErrorResponse("Dish scan failed.")),
+                new UnprocessableEntityObjectResult(new ErrorResponse(localizer["DishScanFailed"].Value)),
             Result<ScanPreviewResult, ScanMealPhotoError>.Failure { Error: ScanMealPhotoError.FoodNotFound } =>
-                new NotFoundObjectResult(new ErrorResponse("Detected food not found in catalog.")),
+                new NotFoundObjectResult(new ErrorResponse(localizer["DetectedFoodNotFound"].Value)),
             _ =>
                 new ObjectResult(new ErrorResponse(localizer["UnexpectedError"].Value))
                     { StatusCode = StatusCodes.Status500InternalServerError }
