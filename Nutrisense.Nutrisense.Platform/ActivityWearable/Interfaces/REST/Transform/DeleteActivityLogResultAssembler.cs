@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.Errors;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Transform;
 
@@ -15,7 +15,7 @@ public static class DeleteActivityLogResultAssembler
     /// <returns>The corresponding <see cref="IActionResult"/>.</returns>
     public static IActionResult ToActionResult(
         Result<bool, DeleteActivityLogError> result,
-        IStringLocalizer<SharedResource> localizer) =>
+        IStringLocalizer<ActivityWearableMessages> localizer) =>
         result switch
         {
             Result<bool, DeleteActivityLogError>.Success =>
