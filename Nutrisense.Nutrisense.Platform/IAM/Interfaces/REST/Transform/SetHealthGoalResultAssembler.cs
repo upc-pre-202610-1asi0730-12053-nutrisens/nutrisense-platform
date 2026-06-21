@@ -4,7 +4,7 @@ using Nutrisense.Nutrisense.Platform.IAM.Application.Errors;
 using Nutrisense.Nutrisense.Platform.IAM.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.IAM.Resources;
 
 namespace Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Transform;
 
@@ -12,7 +12,7 @@ public static class SetHealthGoalResultAssembler
 {
     public static IActionResult ToActionResult(
         Result<User, SetHealthGoalError> result,
-        IStringLocalizer<SharedResource> localizer) =>
+        IStringLocalizer<IAMMessages> localizer) =>
         result switch
         {
             Result<User, SetHealthGoalError>.Success s =>

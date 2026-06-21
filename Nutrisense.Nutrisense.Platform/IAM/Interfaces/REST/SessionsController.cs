@@ -9,7 +9,7 @@ using Nutrisense.Nutrisense.Platform.IAM.Domain.Model.ValueObjects;
 using Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Resources;
+using Nutrisense.Nutrisense.Platform.IAM.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST;
@@ -23,7 +23,7 @@ namespace Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST;
 public class SessionsController(
     IUserCommandService commandService,
     IUserQueryService queryService,
-    IStringLocalizer<SharedResource> localizer) : ControllerBase
+    IStringLocalizer<IAMMessages> localizer) : ControllerBase
 {
     [HttpGet]
     [SwaggerOperation(Summary = "List user sessions", Description = "Returns all active and inactive sessions for the authenticated user.")]
