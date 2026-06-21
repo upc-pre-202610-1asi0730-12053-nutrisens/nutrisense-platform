@@ -30,73 +30,13 @@
     <data name="Unauthorized" xml:space="preserve">
         <value>No autorizado</value>
     </data>
-    <data name="Forbidden" xml:space="preserve">
-        <value>Acceso denegado</value>
-    </data>
     <data name="ValidationFailed" xml:space="preserve">
         <value>Validación fallida</value>
-    </data>
-    <data name="NutritionLogEntryNotFoundTitle" xml:space="preserve">
-        <value>Entrada de diario no encontrada</value>
-    </data>
-    <data name="NutritionLogEntryNotFound" xml:space="preserve">
-        <value>La entrada de diario nutricional solicitada no existe.</value>
-    </data>
-    <data name="NutritionLogEntryUnauthorized" xml:space="preserve">
-        <value>No tiene permiso para modificar esta entrada de diario.</value>
-    </data>
-    <data name="NutritionLogEntryInvalidQuantity" xml:space="preserve">
-        <value>La cantidad proporcionada no es válida.</value>
-    </data>
-    <data name="NutritionLogEntryDeletedTitle" xml:space="preserve">
-        <value>Entrada de diario no encontrada</value>
-    </data>
-    <data name="NutritionLogEntryDeleteUnauthorized" xml:space="preserve">
-        <value>No tiene permiso para eliminar esta entrada de diario.</value>
     </data>
     <data name="UnexpectedError" xml:space="preserve">
         <value>Ocurrió un error inesperado.</value>
     </data>
-    <data name="ActivityLogNotFoundTitle" xml:space="preserve">
-        <value>Registro de actividad no encontrado</value>
-    </data>
-    <data name="ActivityLogNotFound" xml:space="preserve">
-        <value>La entrada de registro de actividad solicitada no existe.</value>
-    </data>
-    <data name="ActivityLogDeleteNotOwner" xml:space="preserve">
-        <value>No tiene permiso para eliminar este registro de actividad.</value>
-    </data>
     <data name="AuthenticationRequired" xml:space="preserve">
         <value>Se requiere autenticación para acceder a este recurso.</value>
-    </data>
-    <data name="InvalidEmail" xml:space="preserve">
-        <value>El formato del correo electrónico no es válido.</value>
-    </data>
-    <data name="WeakPassword" xml:space="preserve">
-        <value>La contraseña no cumple los requisitos de seguridad: al menos 8 caracteres, incluyendo una mayúscula, una minúscula, un dígito y un carácter especial.</value>
-    </data>
-    <data name="EmailAlreadyTaken" xml:space="preserve">
-        <value>Ya existe una cuenta con este correo electrónico.</value>
-    </data>
-    <data name="InvalidCredentials" xml:space="preserve">
-        <value>El correo electrónico o la contraseña son incorrectos.</value>
-    </data>
-    <data name="UserNotFound" xml:space="preserve">
-        <value>No se encontró ninguna cuenta para el identificador proporcionado.</value>
-    </data>
-    <data name="SessionNotFound" xml:space="preserve">
-        <value>La sesión solicitada no existe.</value>
-    </data>
-    <data name="InvalidProfileData" xml:space="preserve">
-        <value>Los datos de perfil proporcionados no son válidos.</value>
-    </data>
-    <data name="InvalidGoal" xml:space="preserve">
-        <value>El objetivo de salud seleccionado no es válido.</value>
-    </data>
-    <data name="PremiumRequired" xml:space="preserve">
-        <value>Esta función requiere una suscripción premium activa.</value>
-    </data>
-    <data name="InvalidDateRange" xml:space="preserve">
-        <value>El rango de fechas proporcionado no es válido.</value>
     </data>
 </root>
