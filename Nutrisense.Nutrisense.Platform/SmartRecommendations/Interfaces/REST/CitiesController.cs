@@ -8,7 +8,6 @@ using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST;
@@ -59,14 +58,14 @@ public class CitiesController(
     [SwaggerOperation(Summary = "Import city into catalog", Description = "Import or reuse a geocoded city into the catalog and return it with an ID.")]
     [SwaggerResponse(StatusCodes.Status200OK, "City imported successfully.", typeof(CityResource))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
-    [SwaggerResponse(StatusCodes.Status422UnprocessableEntity, "The city could not be imported from the provided data.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status422UnprocessableEntity, "The city could not be imported from the provided data.", typeof(ProblemDetails))]
     public async Task<IActionResult> Import([FromBody] ImportCityResource resource)
     {
         var result = await commandService.Handle(new ImportCityCommand(
             resource.Name, resource.NameEn, resource.NameEs, resource.Country, resource.Lat, resource.Lng));
         return result.Fold(
             city => (IActionResult)Ok(CityAssembler.ToResource(city)),
-            error => UnprocessableEntity(new ErrorResponse(localizer["CityImportFailed"].Value)));
+            error => SmartRecommendationsActionResultAssembler.ToActionResult(error, localizer, HttpContext.Request.Path));
     }
 
     [HttpGet("{id:int}/weather")]

@@ -7,7 +7,7 @@ using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.Acl;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Repositories;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Interfaces.Acl;
-using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.Errors;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Errors;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Commands;
@@ -38,7 +38,7 @@ public class RecsEngineCommandService(
     IMediator mediator,
     ILogger<RecsEngineCommandService> logger) : IRecsEngineCommandService
 {
-    public async Task<Result<RecommendationCard, GenerateRecommendationError>> Handle(
+    public async Task<Result<RecommendationCard, SmartRecommendationsError>> Handle(
         GenerateRecommendationCommand command, CancellationToken ct = default)
     {
         try
@@ -50,14 +50,14 @@ public class RecsEngineCommandService(
             {
                 logger.LogInformation(
                     "No location set for user {UserId}; skipping contextual recommendations.", command.UserId);
-                return new Result<RecommendationCard, GenerateRecommendationError>.Failure(
-                    GenerateRecommendationError.NoFoodsAvailable);
+                return new Result<RecommendationCard, SmartRecommendationsError>.Failure(
+                    SmartRecommendationsError.NoFoodsAvailable);
             }
 
             var city = await cityRepository.FindByIdAsync(cityId.Value, ct);
             if (city is null)
-                return new Result<RecommendationCard, GenerateRecommendationError>.Failure(
-                    GenerateRecommendationError.NoFoodsAvailable);
+                return new Result<RecommendationCard, SmartRecommendationsError>.Failure(
+                    SmartRecommendationsError.NoFoodsAvailable);
 
             var restrictions = (await iamFacade.GetDietaryRestrictionsByUserId(command.UserId, ct)).ToList();
             var goal = await bodyHealthMetricsFacade.GetActiveGoalByUserId(command.UserId, ct);
@@ -66,12 +66,31 @@ public class RecsEngineCommandService(
             var weather = await weatherService.GetCurrentAsync(cityId.Value, ct);
             var feedSize = configuration.GetValue("Recommendations:FeedSize", 8);
 
+            // Guard: if the user already has active cards generated for this exact context
+            // (city + weather bucket + goal), reuse them instead of regenerating. These are the
+            // same dimensions that key the suggestion cache, so the result would be identical.
+            // This keeps reactive re-detection (same city on every visit) from churning the DB
+            // and rotating card IDs needlessly. Restriction changes are handled by their own
+            // invalidation path, not here.
+            var activeCards = (await recommendationCardRepository.FindActiveListByUserIdAsync(command.UserId, ct)).ToList();
+            if (activeCards.Count > 0
+                && activeCards.All(c =>
+                    c.CityId == cityId
+                    && c.WeatherType == weather.WeatherType
+                    && c.GoalType == goalType))
+            {
+                logger.LogInformation(
+                    "Reusing {Count} active recommendations for user {UserId} (unchanged context city={CityId}, weather={Weather}, goal={Goal}).",
+                    activeCards.Count, command.UserId, cityId, weather.WeatherType, goalType);
+                return new Result<RecommendationCard, SmartRecommendationsError>.Success(activeCards[0]);
+            }
+
             // Ask the generator (DeepSeek) for locally-available foods for this city + weather + goal.
             // Cached per context so users sharing it reuse one call (see GetOrFetchSuggestionsAsync).
             var suggestions = await GetOrFetchSuggestionsAsync(city, weather, goalType, restrictions, feedSize, ct);
             if (suggestions.Count == 0)
-                return new Result<RecommendationCard, GenerateRecommendationError>.Failure(
-                    GenerateRecommendationError.NoFoodsAvailable);
+                return new Result<RecommendationCard, SmartRecommendationsError>.Failure(
+                    SmartRecommendationsError.NoFoodsAvailable);
 
             // Turn the suggested names into real catalog foods (search-first, AI-estimate the rest).
             var provisioned = await nutritionTrackingFacade.ResolveOrCreateFoodsByNames(
@@ -84,8 +103,8 @@ public class RecsEngineCommandService(
                 .ToList();
 
             if (safe.Count == 0)
-                return new Result<RecommendationCard, GenerateRecommendationError>.Failure(
-                    GenerateRecommendationError.NoFoodsAvailable);
+                return new Result<RecommendationCard, SmartRecommendationsError>.Failure(
+                    SmartRecommendationsError.NoFoodsAvailable);
 
             await recommendationCardRepository.DeactivateAllByUserIdAsync(command.UserId, ct);
 
@@ -117,13 +136,13 @@ public class RecsEngineCommandService(
             await unitOfWork.CompleteAsync(ct);
             await mediator.PublishAsync(new RecommendationGenerated(command.UserId, firstCard!.Id, labelEn));
 
-            return new Result<RecommendationCard, GenerateRecommendationError>.Success(firstCard);
+            return new Result<RecommendationCard, SmartRecommendationsError>.Success(firstCard);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error generating recommendations for user {UserId}", command.UserId);
-            return new Result<RecommendationCard, GenerateRecommendationError>.Failure(
-                GenerateRecommendationError.UnexpectedError);
+            return new Result<RecommendationCard, SmartRecommendationsError>.Failure(
+                SmartRecommendationsError.UnexpectedError);
         }
     }
 
@@ -157,20 +176,20 @@ public class RecsEngineCommandService(
         return suggestions;
     }
 
-    public async Task<Result<LocationPreference, EnableTravelModeError>> Handle(
+    public async Task<Result<LocationPreference, SmartRecommendationsError>> Handle(
         EnableTravelModeCommand command, CancellationToken ct = default)
     {
         try
         {
             var isPro = await subscriptionsFacade.IsProOrAbove(command.UserId, ct);
             if (!isPro)
-                return new Result<LocationPreference, EnableTravelModeError>.Failure(
-                    EnableTravelModeError.PlanNotSufficient);
+                return new Result<LocationPreference, SmartRecommendationsError>.Failure(
+                    SmartRecommendationsError.TravelModePlanNotSufficient);
 
             var city = await cityRepository.FindByIdAsync(command.CurrentCityId, ct);
             if (city is null)
-                return new Result<LocationPreference, EnableTravelModeError>.Failure(
-                    EnableTravelModeError.CityNotFound);
+                return new Result<LocationPreference, SmartRecommendationsError>.Failure(
+                    SmartRecommendationsError.CityNotFound);
 
             var locationPref = await locationPreferenceRepository.FindOrCreateAsync(command.UserId, ct);
             locationPref.EnableTravelMode(command.CurrentCityId);
@@ -180,25 +199,25 @@ public class RecsEngineCommandService(
             await mediator.PublishAsync(new TravelModeActivated(command.UserId, command.CurrentCityId));
             await Handle(new GenerateRecommendationCommand(command.UserId, "travel-mode"), ct);
 
-            return new Result<LocationPreference, EnableTravelModeError>.Success(locationPref);
+            return new Result<LocationPreference, SmartRecommendationsError>.Success(locationPref);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error enabling travel mode for user {UserId}", command.UserId);
-            return new Result<LocationPreference, EnableTravelModeError>.Failure(
-                EnableTravelModeError.UnexpectedError);
+            return new Result<LocationPreference, SmartRecommendationsError>.Failure(
+                SmartRecommendationsError.UnexpectedError);
         }
     }
 
-    public async Task<Result<LocationPreference, DisableTravelModeError>> Handle(
+    public async Task<Result<LocationPreference, SmartRecommendationsError>> Handle(
         DisableTravelModeCommand command, CancellationToken ct = default)
     {
         try
         {
             var locationPref = await locationPreferenceRepository.FindByUserIdAsync(command.UserId, ct);
             if (locationPref is null)
-                return new Result<LocationPreference, DisableTravelModeError>.Failure(
-                    DisableTravelModeError.LocationNotFound);
+                return new Result<LocationPreference, SmartRecommendationsError>.Failure(
+                    SmartRecommendationsError.LocationPreferenceNotFound);
 
             locationPref.DisableTravelMode();
             locationPreferenceRepository.Update(locationPref);
@@ -207,25 +226,25 @@ public class RecsEngineCommandService(
             await mediator.PublishAsync(new TravelModeDeactivated(command.UserId));
             await Handle(new GenerateRecommendationCommand(command.UserId, "travel-disabled"), ct);
 
-            return new Result<LocationPreference, DisableTravelModeError>.Success(locationPref);
+            return new Result<LocationPreference, SmartRecommendationsError>.Success(locationPref);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error disabling travel mode for user {UserId}", command.UserId);
-            return new Result<LocationPreference, DisableTravelModeError>.Failure(
-                DisableTravelModeError.UnexpectedError);
+            return new Result<LocationPreference, SmartRecommendationsError>.Failure(
+                SmartRecommendationsError.UnexpectedError);
         }
     }
 
-    public async Task<Result<Pantry, RegisterPantryItemsError>> Handle(
+    public async Task<Result<Pantry, SmartRecommendationsError>> Handle(
         RegisterPantryItemsCommand command, CancellationToken ct = default)
     {
         try
         {
             var isPro = await subscriptionsFacade.IsProOrAbove(command.UserId, ct);
             if (!isPro)
-                return new Result<Pantry, RegisterPantryItemsError>.Failure(
-                    RegisterPantryItemsError.PlanNotSufficient);
+                return new Result<Pantry, SmartRecommendationsError>.Failure(
+                    SmartRecommendationsError.PantryPlanNotSufficient);
 
             var pantry = await pantryRepository.FindOrCreateAsync(command.UserId, ct);
 
@@ -233,8 +252,8 @@ public class RecsEngineCommandService(
             {
                 var ingredient = await ingredientCatalogRepository.FindByIdAsync(item.IngredientCatalogItemId, ct);
                 if (ingredient is null)
-                    return new Result<Pantry, RegisterPantryItemsError>.Failure(
-                        RegisterPantryItemsError.IngredientNotFound);
+                    return new Result<Pantry, SmartRecommendationsError>.Failure(
+                        SmartRecommendationsError.IngredientNotFound);
             }
 
             pantry.AddItems(command.Items);
@@ -244,24 +263,24 @@ public class RecsEngineCommandService(
             await mediator.PublishAsync(new PantryUpdated(command.UserId));
             await Handle(new SuggestRecipeCommand(command.UserId), ct);
 
-            return new Result<Pantry, RegisterPantryItemsError>.Success(pantry);
+            return new Result<Pantry, SmartRecommendationsError>.Success(pantry);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error registering pantry items for user {UserId}", command.UserId);
-            return new Result<Pantry, RegisterPantryItemsError>.Failure(
-                RegisterPantryItemsError.UnexpectedError);
+            return new Result<Pantry, SmartRecommendationsError>.Failure(
+                SmartRecommendationsError.UnexpectedError);
         }
     }
 
-    public async Task<Result<Pantry, RemovePantryItemError>> Handle(
+    public async Task<Result<Pantry, SmartRecommendationsError>> Handle(
         RemovePantryItemCommand command, CancellationToken ct = default)
     {
         try
         {
             var pantry = await pantryRepository.FindByUserIdAsync(command.UserId, ct);
             if (pantry is null)
-                return new Result<Pantry, RemovePantryItemError>.Failure(RemovePantryItemError.ItemNotFound);
+                return new Result<Pantry, SmartRecommendationsError>.Failure(SmartRecommendationsError.PantryItemNotFound);
 
             try
             {
@@ -269,7 +288,7 @@ public class RecsEngineCommandService(
             }
             catch (InvalidOperationException)
             {
-                return new Result<Pantry, RemovePantryItemError>.Failure(RemovePantryItemError.ItemNotFound);
+                return new Result<Pantry, SmartRecommendationsError>.Failure(SmartRecommendationsError.PantryItemNotFound);
             }
 
             pantryRepository.Update(pantry);
@@ -277,24 +296,24 @@ public class RecsEngineCommandService(
 
             await mediator.PublishAsync(new PantryUpdated(command.UserId));
 
-            return new Result<Pantry, RemovePantryItemError>.Success(pantry);
+            return new Result<Pantry, SmartRecommendationsError>.Success(pantry);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error removing pantry item {ItemId} for user {UserId}",
                 command.PantryItemId, command.UserId);
-            return new Result<Pantry, RemovePantryItemError>.Failure(RemovePantryItemError.UnexpectedError);
+            return new Result<Pantry, SmartRecommendationsError>.Failure(SmartRecommendationsError.UnexpectedError);
         }
     }
 
-    public async Task<Result<Pantry, UpdatePantryItemError>> Handle(
+    public async Task<Result<Pantry, SmartRecommendationsError>> Handle(
         UpdatePantryItemCommand command, CancellationToken ct = default)
     {
         try
         {
             var pantry = await pantryRepository.FindByUserIdAsync(command.UserId, ct);
             if (pantry is null)
-                return new Result<Pantry, UpdatePantryItemError>.Failure(UpdatePantryItemError.ItemNotFound);
+                return new Result<Pantry, SmartRecommendationsError>.Failure(SmartRecommendationsError.PantryItemNotFound);
 
             try
             {
@@ -302,7 +321,7 @@ public class RecsEngineCommandService(
             }
             catch (InvalidOperationException)
             {
-                return new Result<Pantry, UpdatePantryItemError>.Failure(UpdatePantryItemError.ItemNotFound);
+                return new Result<Pantry, SmartRecommendationsError>.Failure(SmartRecommendationsError.PantryItemNotFound);
             }
 
             pantryRepository.Update(pantry);
@@ -310,17 +329,17 @@ public class RecsEngineCommandService(
 
             await mediator.PublishAsync(new PantryUpdated(command.UserId));
 
-            return new Result<Pantry, UpdatePantryItemError>.Success(pantry);
+            return new Result<Pantry, SmartRecommendationsError>.Success(pantry);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error updating pantry item {ItemId} for user {UserId}",
                 command.PantryItemId, command.UserId);
-            return new Result<Pantry, UpdatePantryItemError>.Failure(UpdatePantryItemError.UnexpectedError);
+            return new Result<Pantry, SmartRecommendationsError>.Failure(SmartRecommendationsError.UnexpectedError);
         }
     }
 
-    public async Task<Result<Recipe, SuggestRecipeError>> Handle(
+    public async Task<Result<Recipe, SmartRecommendationsError>> Handle(
         SuggestRecipeCommand command, CancellationToken ct = default)
     {
         try
@@ -335,7 +354,7 @@ public class RecsEngineCommandService(
 
             var recipesForGoal = (await recipeRepository.FindByGoalTypeAsync(goalType, ct)).ToList();
             if (recipesForGoal.Count == 0)
-                return new Result<Recipe, SuggestRecipeError>.Failure(SuggestRecipeError.NoRecipesAvailable);
+                return new Result<Recipe, SmartRecommendationsError>.Failure(SmartRecommendationsError.NoRecipesAvailable);
 
             var filtered = recipesForGoal
                 .Where(r => !r.RestrictionsConflict.Any(rc => restrictions.Contains(rc)))
@@ -345,16 +364,16 @@ public class RecsEngineCommandService(
 
             await mediator.PublishAsync(new RecipeSuggested(command.UserId, recipe.Id));
 
-            return new Result<Recipe, SuggestRecipeError>.Success(recipe);
+            return new Result<Recipe, SmartRecommendationsError>.Success(recipe);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error suggesting recipe for user {UserId}", command.UserId);
-            return new Result<Recipe, SuggestRecipeError>.Failure(SuggestRecipeError.UnexpectedError);
+            return new Result<Recipe, SmartRecommendationsError>.Failure(SmartRecommendationsError.UnexpectedError);
         }
     }
 
-    public async Task<Result<LocationPreference, DetectLocationError>> Handle(
+    public async Task<Result<LocationPreference, SmartRecommendationsError>> Handle(
         DetectLocationCommand command, CancellationToken ct = default)
     {
         try
@@ -371,8 +390,8 @@ public class RecsEngineCommandService(
                 // No nearby city in the catalog: reverse-geocode and import it.
                 var candidate = await geocodingService.ReverseAsync(command.Lat, command.Lng, ct);
                 if (candidate is null)
-                    return new Result<LocationPreference, DetectLocationError>.Failure(
-                        DetectLocationError.DetectionFailed);
+                    return new Result<LocationPreference, SmartRecommendationsError>.Failure(
+                        SmartRecommendationsError.DetectionFailed);
 
                 var city = await FindOrImportCityAsync(candidate, ct);
                 cityId = city.Id;
@@ -386,13 +405,13 @@ public class RecsEngineCommandService(
             await mediator.PublishAsync(new LocationDetected(command.UserId, cityId));
             await HandleCheckWeatherAndProfile(new CheckWeatherAndProfileCommand(command.UserId, cityId), ct);
 
-            return new Result<LocationPreference, DetectLocationError>.Success(locationPref);
+            return new Result<LocationPreference, SmartRecommendationsError>.Success(locationPref);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error detecting location for user {UserId}", command.UserId);
-            return new Result<LocationPreference, DetectLocationError>.Failure(
-                DetectLocationError.UnexpectedError);
+            return new Result<LocationPreference, SmartRecommendationsError>.Failure(
+                SmartRecommendationsError.UnexpectedError);
         }
     }
 
@@ -410,22 +429,22 @@ public class RecsEngineCommandService(
         await mediator.PublishAsync(new PremiumFeaturesLocked(command.UserId));
     }
 
-    public async Task<Result<City, ImportCityError>> Handle(ImportCityCommand command, CancellationToken ct = default)
+    public async Task<Result<City, SmartRecommendationsError>> Handle(ImportCityCommand command, CancellationToken ct = default)
     {
         try
         {
             if (string.IsNullOrWhiteSpace(command.Name) || string.IsNullOrWhiteSpace(command.Country))
-                return new Result<City, ImportCityError>.Failure(ImportCityError.InvalidData);
+                return new Result<City, SmartRecommendationsError>.Failure(SmartRecommendationsError.InvalidCityData);
 
             var candidate = new GeoCityCandidate(
                 command.Name, command.NameEn, command.NameEs, command.Country, null, command.Lat, command.Lng);
             var city = await FindOrImportCityAsync(candidate, ct);
-            return new Result<City, ImportCityError>.Success(city);
+            return new Result<City, SmartRecommendationsError>.Success(city);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error importing city '{Name}' ({Country}).", command.Name, command.Country);
-            return new Result<City, ImportCityError>.Failure(ImportCityError.UnexpectedError);
+            return new Result<City, SmartRecommendationsError>.Failure(SmartRecommendationsError.UnexpectedError);
         }
     }
 
@@ -455,6 +474,15 @@ public class RecsEngineCommandService(
         }
     }
 
+    public async Task<LocationPreference> Handle(SetLocationPermissionCommand command, CancellationToken ct = default)
+    {
+        var locationPref = await locationPreferenceRepository.FindOrCreateAsync(command.UserId, ct);
+        locationPref.SetLocationPermission(command.Granted);
+        locationPreferenceRepository.Update(locationPref);
+        await unitOfWork.CompleteAsync(ct);
+        return locationPref;
+    }
+
     private async Task HandleCheckWeatherAndProfile(CheckWeatherAndProfileCommand command, CancellationToken ct)
     {
         var snapshot = await weatherService.GetCurrentAsync(command.CityId, ct);
@@ -462,25 +490,25 @@ public class RecsEngineCommandService(
         await Handle(new GenerateRecommendationCommand(command.UserId, "weather"), ct);
     }
 
-    public async Task<Result<LocationPreference, SetHomeCityError>> Handle(SetHomeCityCommand command, CancellationToken ct = default)
+    public async Task<Result<LocationPreference, SmartRecommendationsError>> Handle(SetHomeCityCommand command, CancellationToken ct = default)
     {
         try
         {
             var city = await cityRepository.FindByIdAsync(command.CityId, ct);
             if (city is null)
-                return new Result<LocationPreference, SetHomeCityError>.Failure(SetHomeCityError.CityNotFound);
+                return new Result<LocationPreference, SmartRecommendationsError>.Failure(SmartRecommendationsError.CityNotFound);
 
             var locationPref = await locationPreferenceRepository.FindOrCreateAsync(command.UserId, ct);
             locationPref.SetHomeCity(command.CityId);
             locationPreferenceRepository.Update(locationPref);
             await unitOfWork.CompleteAsync(ct);
 
-            return new Result<LocationPreference, SetHomeCityError>.Success(locationPref);
+            return new Result<LocationPreference, SmartRecommendationsError>.Success(locationPref);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error setting home city for user {UserId}", command.UserId);
-            return new Result<LocationPreference, SetHomeCityError>.Failure(SetHomeCityError.UnexpectedError);
+            return new Result<LocationPreference, SmartRecommendationsError>.Failure(SmartRecommendationsError.UnexpectedError);
         }
     }
 }
