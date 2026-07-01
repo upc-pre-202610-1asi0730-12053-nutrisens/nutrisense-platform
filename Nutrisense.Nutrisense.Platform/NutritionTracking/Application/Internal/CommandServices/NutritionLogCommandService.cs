@@ -1,5 +1,5 @@
 using Cortex.Mediator;
-using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.Errors;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Errors;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Commands;
@@ -25,20 +25,20 @@ public class NutritionLogCommandService(
     private const string DishScanSource = "ai-dish-scan";
     private const string MenuScanSource = "ai-menu-scan";
 
-    public async Task<Result<NutritionLog, UpdateNutritionLogEntryError>> Handle(UpdateNutritionLogEntryCommand command, CancellationToken ct = default)
+    public async Task<Result<NutritionLog, NutritionTrackingError>> Handle(UpdateNutritionLogEntryCommand command, CancellationToken ct = default)
     {
         try
         {
             var log = await nutritionLogRepository.FindByIdAsync(command.EntryId, ct);
             if (log is null)
-                return new Result<NutritionLog, UpdateNutritionLogEntryError>.Failure(UpdateNutritionLogEntryError.EntryNotFound);
+                return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.EntryNotFound);
 
             if (log.UserId != command.UserId)
-                return new Result<NutritionLog, UpdateNutritionLogEntryError>.Failure(UpdateNutritionLogEntryError.Unauthorized);
+                return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.EntryUpdateForbidden);
 
             var food = await foodRepository.FindByIdAsync(log.FoodId, ct);
             if (food is null)
-                return new Result<NutritionLog, UpdateNutritionLogEntryError>.Failure(UpdateNutritionLogEntryError.EntryNotFound);
+                return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.EntryNotFound);
 
             try
             {
@@ -46,54 +46,54 @@ public class NutritionLogCommandService(
             }
             catch (ArgumentException)
             {
-                return new Result<NutritionLog, UpdateNutritionLogEntryError>.Failure(UpdateNutritionLogEntryError.InvalidQuantity);
+                return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.InvalidEntryQuantity);
             }
 
             nutritionLogRepository.Update(log);
             await unitOfWork.CompleteAsync(ct);
             await PublishConsumptionUpdated(log.UserId, log.Date, ct);
 
-            return new Result<NutritionLog, UpdateNutritionLogEntryError>.Success(log);
+            return new Result<NutritionLog, NutritionTrackingError>.Success(log);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error updating nutrition log entry {EntryId}", command.EntryId);
-            return new Result<NutritionLog, UpdateNutritionLogEntryError>.Failure(UpdateNutritionLogEntryError.UnexpectedError);
+            return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.UnexpectedError);
         }
     }
 
-    public async Task<Result<bool, DeleteNutritionLogEntryError>> Handle(DeleteNutritionLogEntryCommand command, CancellationToken ct = default)
+    public async Task<Result<bool, NutritionTrackingError>> Handle(DeleteNutritionLogEntryCommand command, CancellationToken ct = default)
     {
         try
         {
             var log = await nutritionLogRepository.FindByIdAsync(command.EntryId, ct);
             if (log is null)
-                return new Result<bool, DeleteNutritionLogEntryError>.Failure(DeleteNutritionLogEntryError.EntryNotFound);
+                return new Result<bool, NutritionTrackingError>.Failure(NutritionTrackingError.EntryNotFound);
 
             if (log.UserId != command.UserId)
-                return new Result<bool, DeleteNutritionLogEntryError>.Failure(DeleteNutritionLogEntryError.Unauthorized);
+                return new Result<bool, NutritionTrackingError>.Failure(NutritionTrackingError.EntryDeleteForbidden);
 
             var date = log.Date;
             nutritionLogRepository.Remove(log);
             await unitOfWork.CompleteAsync(ct);
             await PublishConsumptionUpdated(command.UserId, date, ct);
 
-            return new Result<bool, DeleteNutritionLogEntryError>.Success(true);
+            return new Result<bool, NutritionTrackingError>.Success(true);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error deleting nutrition log entry {EntryId}", command.EntryId);
-            return new Result<bool, DeleteNutritionLogEntryError>.Failure(DeleteNutritionLogEntryError.UnexpectedError);
+            return new Result<bool, NutritionTrackingError>.Failure(NutritionTrackingError.UnexpectedError);
         }
     }
 
-    public async Task<Result<NutritionLog, LogMealError>> Handle(LogMealToDailyLogCommand command, CancellationToken ct = default)
+    public async Task<Result<NutritionLog, NutritionTrackingError>> Handle(LogMealToDailyLogCommand command, CancellationToken ct = default)
     {
         try
         {
             var food = await foodRepository.FindByIdAsync(command.FoodId, ct);
             if (food is null)
-                return new Result<NutritionLog, LogMealError>.Failure(LogMealError.FoodNotFound);
+                return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.FoodNotFound);
 
             NutritionLog log;
             try
@@ -102,34 +102,34 @@ public class NutritionLogCommandService(
             }
             catch (ArgumentException)
             {
-                return new Result<NutritionLog, LogMealError>.Failure(LogMealError.InvalidMealType);
+                return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.InvalidMealType);
             }
 
             await nutritionLogRepository.AddAsync(log, ct);
             await unitOfWork.CompleteAsync(ct);
             await PublishConsumptionUpdated(command.UserId, command.Date, ct);
 
-            return new Result<NutritionLog, LogMealError>.Success(log);
+            return new Result<NutritionLog, NutritionTrackingError>.Success(log);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error logging meal for user {UserId}", command.UserId);
-            return new Result<NutritionLog, LogMealError>.Failure(LogMealError.UnexpectedError);
+            return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.UnexpectedError);
         }
     }
 
-    public async Task<Result<ScanPreviewResult, ScanMealPhotoError>> Handle(ScanMealPhotoCommand command, CancellationToken ct = default)
+    public async Task<Result<ScanPreviewResult, NutritionTrackingError>> Handle(ScanMealPhotoCommand command, CancellationToken ct = default)
     {
         try
         {
             // 1) Gemini vision: recognize the items present on the plate.
             var recognition = await dishVisionService.RecognizeDishAsync(command.ImageBase64OrUri, ct);
             if (!recognition.Success)
-                return new Result<ScanPreviewResult, ScanMealPhotoError>.Failure(ScanMealPhotoError.ScanFailed);
+                return new Result<ScanPreviewResult, NutritionTrackingError>.Failure(NutritionTrackingError.DishScanFailed);
 
             // Nothing detected: succeed with an empty preview so the client shows its dish fallback.
             if (recognition.Items.Count == 0)
-                return new Result<ScanPreviewResult, ScanMealPhotoError>.Success(new ScanPreviewResult([]));
+                return new Result<ScanPreviewResult, NutritionTrackingError>.Success(new ScanPreviewResult([]));
 
             var items = new List<ScannedDishItem>();
             var unmatched = new List<DetectedDishItem>();
@@ -170,12 +170,12 @@ public class NutritionLogCommandService(
             var firstFoodId = items.FirstOrDefault(i => i.FoodId is not null)?.FoodId ?? 0;
             await mediator.PublishAsync(new MealPhotoAnalyzed(command.UserId, firstFoodId, Confidence: 1m));
 
-            return new Result<ScanPreviewResult, ScanMealPhotoError>.Success(new ScanPreviewResult(items));
+            return new Result<ScanPreviewResult, NutritionTrackingError>.Success(new ScanPreviewResult(items));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error scanning meal photo for user {UserId}", command.UserId);
-            return new Result<ScanPreviewResult, ScanMealPhotoError>.Failure(ScanMealPhotoError.UnexpectedError);
+            return new Result<ScanPreviewResult, NutritionTrackingError>.Failure(NutritionTrackingError.UnexpectedError);
         }
     }
 
@@ -194,7 +194,7 @@ public class NutritionLogCommandService(
             est.Restrictions.ToArray());
 
         var result = await foodCommandService.Handle(register, ct);
-        if (result is Result<Food, RegisterFoodError>.Success created)
+        if (result is Result<Food, NutritionTrackingError>.Success created)
             return created.Value.Id;
 
         // Already cached (DuplicateKey) or could not be registered: fall back to a name lookup.
@@ -202,13 +202,13 @@ public class NutritionLogCommandService(
         return existing?.Id;
     }
 
-    public async Task<Result<NutritionLog, ConfirmScanError>> Handle(ConfirmScanResultCommand command, CancellationToken ct = default)
+    public async Task<Result<NutritionLog, NutritionTrackingError>> Handle(ConfirmScanResultCommand command, CancellationToken ct = default)
     {
         try
         {
             var food = await foodRepository.FindByIdAsync(command.DetectedFoodId, ct);
             if (food is null)
-                return new Result<NutritionLog, ConfirmScanError>.Failure(ConfirmScanError.FoodNotFound);
+                return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.FoodNotFound);
 
             NutritionLog log;
             try
@@ -217,36 +217,36 @@ public class NutritionLogCommandService(
             }
             catch (ArgumentException)
             {
-                return new Result<NutritionLog, ConfirmScanError>.Failure(ConfirmScanError.InvalidData);
+                return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.InvalidScanConfirmationData);
             }
 
             await nutritionLogRepository.AddAsync(log, ct);
             await unitOfWork.CompleteAsync(ct);
             await PublishConsumptionUpdated(command.UserId, command.Date, ct);
 
-            return new Result<NutritionLog, ConfirmScanError>.Success(log);
+            return new Result<NutritionLog, NutritionTrackingError>.Success(log);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error confirming scan result for user {UserId}", command.UserId);
-            return new Result<NutritionLog, ConfirmScanError>.Failure(ConfirmScanError.UnexpectedError);
+            return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.UnexpectedError);
         }
     }
 
-    public async Task<Result<MenuOptionsPreview, ScanMenuPhotoError>> Handle(ScanMenuPhotoCommand command, CancellationToken ct = default)
+    public async Task<Result<MenuOptionsPreview, NutritionTrackingError>> Handle(ScanMenuPhotoCommand command, CancellationToken ct = default)
     {
         try
         {
             // 1) Gemini vision/OCR: extract the dishes listed on the menu.
             var recognition = await menuVisionService.AnalyzeMenuAsync(command.ImageBase64OrUri, ct);
             if (!recognition.Success)
-                return new Result<MenuOptionsPreview, ScanMenuPhotoError>.Failure(ScanMenuPhotoError.ScanFailed);
+                return new Result<MenuOptionsPreview, NutritionTrackingError>.Failure(NutritionTrackingError.MenuScanFailed);
 
             var dishes = recognition.Options.ToList();
 
             // Nothing detected: succeed with an empty preview so the client shows its menu fallback.
             if (dishes.Count == 0)
-                return new Result<MenuOptionsPreview, ScanMenuPhotoError>.Success(new MenuOptionsPreview([]));
+                return new Result<MenuOptionsPreview, NutritionTrackingError>.Success(new MenuOptionsPreview([]));
 
             var options = new List<ScannedMenuOption>();
             var unmatched = new List<string>();
@@ -281,22 +281,22 @@ public class NutritionLogCommandService(
             var detectedFoodIds = options.Where(o => o.FoodId is not null).Select(o => o.FoodId!.Value).ToArray();
             await mediator.PublishAsync(new MenuAnalyzed(command.UserId, detectedFoodIds));
 
-            return new Result<MenuOptionsPreview, ScanMenuPhotoError>.Success(new MenuOptionsPreview(options));
+            return new Result<MenuOptionsPreview, NutritionTrackingError>.Success(new MenuOptionsPreview(options));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error scanning menu photo for user {UserId}", command.UserId);
-            return new Result<MenuOptionsPreview, ScanMenuPhotoError>.Failure(ScanMenuPhotoError.UnexpectedError);
+            return new Result<MenuOptionsPreview, NutritionTrackingError>.Failure(NutritionTrackingError.UnexpectedError);
         }
     }
 
-    public async Task<Result<NutritionLog, SelectMenuOptionError>> Handle(SelectMenuOptionCommand command, CancellationToken ct = default)
+    public async Task<Result<NutritionLog, NutritionTrackingError>> Handle(SelectMenuOptionCommand command, CancellationToken ct = default)
     {
         try
         {
             var food = await foodRepository.FindByIdAsync(command.FoodId, ct);
             if (food is null)
-                return new Result<NutritionLog, SelectMenuOptionError>.Failure(SelectMenuOptionError.FoodNotFound);
+                return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.FoodNotFound);
 
             NutritionLog log;
             try
@@ -305,19 +305,19 @@ public class NutritionLogCommandService(
             }
             catch (ArgumentException)
             {
-                return new Result<NutritionLog, SelectMenuOptionError>.Failure(SelectMenuOptionError.InvalidData);
+                return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.InvalidMenuSelectionData);
             }
 
             await nutritionLogRepository.AddAsync(log, ct);
             await unitOfWork.CompleteAsync(ct);
             await PublishConsumptionUpdated(command.UserId, command.Date, ct);
 
-            return new Result<NutritionLog, SelectMenuOptionError>.Success(log);
+            return new Result<NutritionLog, NutritionTrackingError>.Success(log);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error selecting menu option for user {UserId}", command.UserId);
-            return new Result<NutritionLog, SelectMenuOptionError>.Failure(SelectMenuOptionError.UnexpectedError);
+            return new Result<NutritionLog, NutritionTrackingError>.Failure(NutritionTrackingError.UnexpectedError);
         }
     }
 

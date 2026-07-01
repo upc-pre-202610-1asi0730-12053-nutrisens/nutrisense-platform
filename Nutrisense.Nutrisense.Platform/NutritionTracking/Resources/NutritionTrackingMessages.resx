@@ -81,4 +81,19 @@
     <data name="FoodImportFailed" xml:space="preserve">
         <value>The food import request could not be processed.</value>
     </data>
+    <data name="BadRequestTitle" xml:space="preserve">
+        <value>Invalid request.</value>
+    </data>
+    <data name="FoodNotFoundTitle" xml:space="preserve">
+        <value>Food not found.</value>
+    </data>
+    <data name="UnprocessableEntityTitle" xml:space="preserve">
+        <value>Could not process the request.</value>
+    </data>
+    <data name="ConflictTitle" xml:space="preserve">
+        <value>Conflict.</value>
+    </data>
+    <data name="UnexpectedServerError" xml:space="preserve">
+        <value>An unexpected server error occurred.</value>
+    </data>
 </root>
