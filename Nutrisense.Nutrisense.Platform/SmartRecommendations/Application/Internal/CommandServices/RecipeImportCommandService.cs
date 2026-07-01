@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Repositories;
-using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.Errors;
+using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Errors;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Commands;
@@ -27,7 +27,7 @@ public partial class RecipeImportCommandService(
     private const int MinIngredients = 3;
     private static readonly string[] DefaultGoals = ["weight-loss", "muscle-gain"];
 
-    public async Task<Result<int, RecipeImportError>> Handle(
+    public async Task<Result<int, SmartRecommendationsError>> Handle(
         ImportRecipeSuggestionsCommand command, CancellationToken ct = default)
     {
         try
@@ -37,7 +37,7 @@ public partial class RecipeImportCommandService(
             {
                 logger.LogWarning("[RecipeImport] Only {Count} ingredients available; need at least {Min}.",
                     ingredients.Count, MinIngredients);
-                return new Result<int, RecipeImportError>.Failure(RecipeImportError.InsufficientIngredients);
+                return new Result<int, SmartRecommendationsError>.Failure(SmartRecommendationsError.InsufficientIngredients);
             }
 
             var keyToItem = ingredients
@@ -114,12 +114,12 @@ public partial class RecipeImportCommandService(
             }
 
             logger.LogInformation("[RecipeImport] Complete: {Total} recipes generated", total);
-            return new Result<int, RecipeImportError>.Success(total);
+            return new Result<int, SmartRecommendationsError>.Success(total);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "[RecipeImport] Unexpected error generating recipes");
-            return new Result<int, RecipeImportError>.Failure(RecipeImportError.UnexpectedError);
+            return new Result<int, SmartRecommendationsError>.Failure(SmartRecommendationsError.UnexpectedError);
         }
     }
 
