@@ -54,6 +54,10 @@ public class UserSubscriptionEntityTypeConfiguration : IEntityTypeConfiguration<
             .HasColumnName("stripe_subscription_id")
             .IsRequired(false);
 
+        builder.Property(s => s.StripeCustomerId)
+            .HasColumnName("stripe_customer_id")
+            .IsRequired(false);
+
         builder.Property(s => s.LastPlanChangeAt)
             .HasColumnName("last_plan_change_at")
             .IsRequired(false);
