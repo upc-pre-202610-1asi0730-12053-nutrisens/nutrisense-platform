@@ -13,12 +13,17 @@ public class CaloricBalanceCalculator : ICaloricBalanceCalculator
     public decimal CalculateDailyActiveCalories(IEnumerable<ActivityLog> logs, DateOnly date) =>
         logs.Where(l => l.Date == date).Sum(l => l.CaloriesBurned);
 
-    // TODO: integrate with BodyMetrics TDEE and NutritionTracking consumed calories for accurate balance.
-    /// <summary>Computes the net caloric balance. Currently returns the active calories until TDEE and intake are wired in.</summary>
+    /// <summary>
+    /// Computes the net caloric balance for a day as <c>intake − total expenditure</c>, where total
+    /// expenditure is the TDEE baseline plus calories burned through explicitly logged activity:
+    /// <c>balance = consumedCalories − (tdee + activeCalories)</c>. A negative result is a deficit
+    /// (burned more than eaten), a positive result a surplus. Any component absent upstream is passed
+    /// as 0, so the balance degrades gracefully to whatever data is available.
+    /// </summary>
     /// <param name="tdee">Total daily energy expenditure baseline, in kilocalories.</param>
     /// <param name="activeCalories">Calories burned through logged activity, in kilocalories.</param>
     /// <param name="consumedCalories">Calories consumed through nutrition, in kilocalories.</param>
-    /// <returns>The resulting caloric balance, in kilocalories.</returns>
+    /// <returns>The resulting net caloric balance, in kilocalories (negative = deficit, positive = surplus).</returns>
     public decimal CalculateBalance(decimal tdee, decimal activeCalories, decimal consumedCalories) =>
-        activeCalories;
+        consumedCalories - (tdee + activeCalories);
 }
