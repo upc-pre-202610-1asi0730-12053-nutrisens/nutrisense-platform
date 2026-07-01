@@ -21,6 +21,15 @@
     <data name="Forbidden" xml:space="preserve">
         <value>Acceso denegado</value>
     </data>
+    <data name="NotFoundTitle" xml:space="preserve">
+        <value>No encontrado</value>
+    </data>
+    <data name="BadRequestTitle" xml:space="preserve">
+        <value>Solicitud incorrecta</value>
+    </data>
+    <data name="ConflictTitle" xml:space="preserve">
+        <value>Conflicto</value>
+    </data>
     <data name="ActivityLogNotFoundTitle" xml:space="preserve">
         <value>Registro de actividad no encontrado</value>
     </data>

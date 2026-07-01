@@ -27,6 +27,18 @@ public partial class WearableConnection
     /// <summary>Instant (UTC) at which the user authorized the connection.</summary>
     public DateTimeOffset AuthorizedAt { get; private set; }
 
+    /// <summary>Whether the connection should be re-synced automatically (driven by the client on load).</summary>
+    public bool AutoSyncEnabled { get; private set; }
+
+    /// <summary>Provider access token used to call the data API. Never exposed to API clients.</summary>
+    public string? AccessToken { get; private set; }
+
+    /// <summary>Long-lived provider refresh token. Never exposed to API clients.</summary>
+    public string? RefreshToken { get; private set; }
+
+    /// <summary>Instant (UTC) at which <see cref="AccessToken"/> expires, or null if unknown.</summary>
+    public DateTimeOffset? TokenExpiresAt { get; private set; }
+
     /// <summary>Parameterless constructor required by EF Core for materialization.</summary>
     protected WearableConnection() { }
 
@@ -41,6 +53,17 @@ public partial class WearableConnection
         AuthorizedAt = authorizedAt;
     }
 
+    /// <summary>Stores the access/refresh tokens granted by the provider. Preserves the existing refresh token when the provider returns none (e.g. on a plain refresh).</summary>
+    /// <param name="accessToken">The freshly granted access token.</param>
+    /// <param name="refreshToken">The refresh token, or null to keep the current one.</param>
+    /// <param name="expiresAt">Instant (UTC) at which the access token expires, or null if unknown.</param>
+    public void ApplyAuthorization(string? accessToken, string? refreshToken, DateTimeOffset? expiresAt)
+    {
+        AccessToken = accessToken;
+        if (!string.IsNullOrWhiteSpace(refreshToken)) RefreshToken = refreshToken;
+        TokenExpiresAt = expiresAt;
+    }
+
     /// <summary>Records a successful sync, stamping the time and transitioning the connection to "connected".</summary>
     /// <param name="syncedAt">Instant (UTC) at which the sync completed.</param>
     public void ApplySync(DateTimeOffset syncedAt)
@@ -49,9 +72,20 @@ public partial class WearableConnection
         Status = new WearableStatus("connected").Value;
     }
 
-    /// <summary>Transitions the connection to the "disconnected" state, revoking further syncing.</summary>
+    /// <summary>Enables or disables automatic re-syncing for this connection.</summary>
+    /// <param name="enabled">True to enable automatic syncing; false to disable it.</param>
+    public void SetAutoSync(bool enabled)
+    {
+        AutoSyncEnabled = enabled;
+    }
+
+    /// <summary>Transitions the connection to the "disconnected" state, revoking further syncing and clearing tokens.</summary>
     public void ApplyDisconnect()
     {
         Status = new WearableStatus("disconnected").Value;
+        AutoSyncEnabled = false;
+        AccessToken = null;
+        RefreshToken = null;
+        TokenExpiresAt = null;
     }
 }
