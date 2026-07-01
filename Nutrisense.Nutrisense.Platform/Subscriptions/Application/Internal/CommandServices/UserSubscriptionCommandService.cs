@@ -1,7 +1,7 @@
 using Cortex.Mediator;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Repositories;
-using Nutrisense.Nutrisense.Platform.Subscriptions.Application.Errors;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Errors;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Commands;
@@ -22,7 +22,7 @@ public class UserSubscriptionCommandService(
     IMediator mediator,
     ILogger<UserSubscriptionCommandService> logger) : IUserSubscriptionCommandService
 {
-    public async Task<Result<UserSubscription, SelectSubscriptionPlanError>> HandleSelectPlan(
+    public async Task<Result<UserSubscription, SubscriptionsError>> HandleSelectPlan(
         SelectSubscriptionPlanCommand command)
     {
         try
@@ -31,26 +31,26 @@ public class UserSubscriptionCommandService(
             try { _ = new PlanKey(command.PlanKey); }
             catch (ArgumentException)
             {
-                return new Result<UserSubscription, SelectSubscriptionPlanError>.Failure(
-                    SelectSubscriptionPlanError.PlanNotFound);
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.PlanNotFound);
             }
 
             var plan = await planRepository.FindByKeyAsync(command.PlanKey);
             if (plan is null)
-                return new Result<UserSubscription, SelectSubscriptionPlanError>.Failure(
-                    SelectSubscriptionPlanError.PlanNotFound);
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.PlanNotFound);
 
             // 2. Reject if already subscribed
             var existing = await subscriptionRepository.FindActiveByUserIdAsync(command.UserId);
             if (existing is not null)
-                return new Result<UserSubscription, SelectSubscriptionPlanError>.Failure(
-                    SelectSubscriptionPlanError.AlreadySubscribed);
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.AlreadySubscribed);
 
             // 3. Validate payment method exists
             var paymentMethod = await paymentMethodRepository.FindByIdAsync(command.PaymentMethodId);
             if (paymentMethod is null)
-                return new Result<UserSubscription, SelectSubscriptionPlanError>.Failure(
-                    SelectSubscriptionPlanError.PaymentMethodNotFound);
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.PaymentMethodNotFound);
 
             // 4. Create subscription (status = "pending-payment") and save
             var subscription = new UserSubscription(command, plan.Id);
@@ -60,17 +60,25 @@ public class UserSubscriptionCommandService(
             // 5. Publish PlanSelected
             await mediator.PublishAsync(new PlanSelected(subscription.Id, command.UserId, command.PlanKey));
 
-            // 6. Charge via payment gateway
+            // 6. Ensure a Stripe customer for the user, then charge via the payment gateway
             var amount = new Money(plan.PriceMonthly, plan.Currency);
+            var customerId = await paymentGateway.EnsureCustomerAsync(
+                command.UserId, null, paymentMethod.StripePaymentMethodId, CancellationToken.None);
+            if (customerId is null)
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.PaymentFailed);
+
+            subscription.ApplyStripeCustomer(customerId);
+
             var chargeResult = await paymentGateway.ChargeAsync(
-                $"cus_user_{command.UserId}",
+                customerId,
                 paymentMethod.StripePaymentMethodId,
                 amount,
                 CancellationToken.None);
 
             if (!chargeResult.Success)
-                return new Result<UserSubscription, SelectSubscriptionPlanError>.Failure(
-                    SelectSubscriptionPlanError.PaymentFailed);
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.PaymentFailed);
 
             // 7. Add PaymentRecord, set status "active", save
             var record = new PaymentRecord(
@@ -89,29 +97,29 @@ public class UserSubscriptionCommandService(
             await mediator.PublishAsync(new SubscriptionActivated(subscription.Id, command.UserId));
             await mediator.PublishAsync(new BenefitsEnabled(command.UserId, command.PlanKey));
 
-            return new Result<UserSubscription, SelectSubscriptionPlanError>.Success(subscription);
+            return new Result<UserSubscription, SubscriptionsError>.Success(subscription);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error selecting subscription plan for user {UserId}", command.UserId);
-            return new Result<UserSubscription, SelectSubscriptionPlanError>.Failure(
-                SelectSubscriptionPlanError.UnexpectedError);
+            return new Result<UserSubscription, SubscriptionsError>.Failure(
+                SubscriptionsError.UnexpectedError);
         }
     }
 
-    public async Task<Result<UserSubscription, CancelSubscriptionError>> HandleCancel(
+    public async Task<Result<UserSubscription, SubscriptionsError>> HandleCancel(
         CancelSubscriptionCommand command)
     {
         try
         {
             var subscription = await subscriptionRepository.FindByIdAsync(command.UserSubscriptionId);
             if (subscription is null)
-                return new Result<UserSubscription, CancelSubscriptionError>.Failure(
-                    CancelSubscriptionError.NotFound);
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.SubscriptionNotFound);
 
             if (subscription.Status != "active")
-                return new Result<UserSubscription, CancelSubscriptionError>.Failure(
-                    CancelSubscriptionError.NotActive);
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.SubscriptionNotActive);
 
             subscription.ApplyCancel(command.CancelAtPeriodEnd);
             subscriptionRepository.Update(subscription);
@@ -121,41 +129,50 @@ public class UserSubscriptionCommandService(
             await mediator.PublishAsync(new SubscriptionCancelled(subscription.Id, subscription.UserId));
             await mediator.PublishAsync(new BenefitsDisabled(subscription.UserId));
 
-            return new Result<UserSubscription, CancelSubscriptionError>.Success(subscription);
+            return new Result<UserSubscription, SubscriptionsError>.Success(subscription);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error cancelling subscription {SubscriptionId}", command.UserSubscriptionId);
-            return new Result<UserSubscription, CancelSubscriptionError>.Failure(
-                CancelSubscriptionError.UnexpectedError);
+            return new Result<UserSubscription, SubscriptionsError>.Failure(
+                SubscriptionsError.UnexpectedError);
         }
     }
 
-    public async Task<Result<UserSubscription, RenewSubscriptionError>> HandleRenew(
+    public async Task<Result<UserSubscription, SubscriptionsError>> HandleRenew(
         RenewSubscriptionCommand command)
     {
         try
         {
             var subscription = await subscriptionRepository.FindByIdAsync(command.UserSubscriptionId);
             if (subscription is null)
-                return new Result<UserSubscription, RenewSubscriptionError>.Failure(
-                    RenewSubscriptionError.NotFound);
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.SubscriptionNotFound);
 
             var plan = await planRepository.FindByIdAsync(subscription.PlanId);
             var paymentMethod = subscription.PaymentMethodId.HasValue
                 ? await paymentMethodRepository.FindByIdAsync(subscription.PaymentMethodId.Value)
                 : null;
 
+            if (paymentMethod is null)
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.PaymentFailed);
+
+            var customerId = await ResolveCustomerIdAsync(subscription, paymentMethod.StripePaymentMethodId);
+            if (customerId is null)
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.PaymentFailed);
+
             var amount = new Money(plan!.PriceMonthly, plan.Currency);
             var chargeResult = await paymentGateway.ChargeAsync(
-                $"cus_user_{subscription.UserId}",
-                paymentMethod?.StripePaymentMethodId ?? "pm_fake",
+                customerId,
+                paymentMethod.StripePaymentMethodId,
                 amount,
                 CancellationToken.None);
 
             if (!chargeResult.Success)
-                return new Result<UserSubscription, RenewSubscriptionError>.Failure(
-                    RenewSubscriptionError.PaymentFailed);
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.PaymentFailed);
 
             var record = new PaymentRecord(
                 subscription.Id,
@@ -173,17 +190,17 @@ public class UserSubscriptionCommandService(
             await mediator.PublishAsync(new SubscriptionRenewed(subscription.Id, subscription.UserId));
             await mediator.PublishAsync(new BenefitsEnabled(subscription.UserId, subscription.PlanKey));
 
-            return new Result<UserSubscription, RenewSubscriptionError>.Success(subscription);
+            return new Result<UserSubscription, SubscriptionsError>.Success(subscription);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error renewing subscription {SubscriptionId}", command.UserSubscriptionId);
-            return new Result<UserSubscription, RenewSubscriptionError>.Failure(
-                RenewSubscriptionError.UnexpectedError);
+            return new Result<UserSubscription, SubscriptionsError>.Failure(
+                SubscriptionsError.UnexpectedError);
         }
     }
 
-    public async Task<Result<UserSubscription, ChangeSubscriptionPlanError>> HandleChangePlan(
+    public async Task<Result<UserSubscription, SubscriptionsError>> HandleChangePlan(
         ChangeSubscriptionPlanCommand command)
     {
         try
@@ -192,28 +209,28 @@ public class UserSubscriptionCommandService(
             try { _ = new BillingPeriod(command.BillingPeriod); }
             catch (ArgumentException)
             {
-                return new Result<UserSubscription, ChangeSubscriptionPlanError>.Failure(
-                    ChangeSubscriptionPlanError.PlanNotFound);
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.PlanNotFound);
             }
 
             // 2. Load subscription
             var subscription = await subscriptionRepository.FindByIdAsync(command.UserSubscriptionId);
             if (subscription is null)
-                return new Result<UserSubscription, ChangeSubscriptionPlanError>.Failure(
-                    ChangeSubscriptionPlanError.SubscriptionNotFound);
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.SubscriptionNotFound);
 
             // 3. Reject same-plan change
             if (subscription.PlanKey == command.NewPlanKey)
-                return new Result<UserSubscription, ChangeSubscriptionPlanError>.Failure(
-                    ChangeSubscriptionPlanError.SamePlan);
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.SamePlan);
 
             // 4. Load current and target plans
             var currentPlan = await planRepository.FindByIdAsync(subscription.PlanId);
             var newPlan = await planRepository.FindByKeyAsync(command.NewPlanKey);
 
             if (newPlan is null)
-                return new Result<UserSubscription, ChangeSubscriptionPlanError>.Failure(
-                    ChangeSubscriptionPlanError.PlanNotFound);
+                return new Result<UserSubscription, SubscriptionsError>.Failure(
+                    SubscriptionsError.PlanNotFound);
 
             var oldPlanKey = subscription.PlanKey;
             var isUpgrade = newPlan.PriceMonthly > (currentPlan?.PriceMonthly ?? 0m);
@@ -229,15 +246,24 @@ public class UserSubscriptionCommandService(
                     ? await paymentMethodRepository.FindByIdAsync(paymentMethodId.Value)
                     : null;
 
+                if (paymentMethod is null)
+                    return new Result<UserSubscription, SubscriptionsError>.Failure(
+                        SubscriptionsError.PaymentFailed);
+
+                var customerId = await ResolveCustomerIdAsync(subscription, paymentMethod.StripePaymentMethodId);
+                if (customerId is null)
+                    return new Result<UserSubscription, SubscriptionsError>.Failure(
+                        SubscriptionsError.PaymentFailed);
+
                 var chargeResult = await paymentGateway.ChargeAsync(
-                    $"cus_user_{subscription.UserId}",
-                    paymentMethod?.StripePaymentMethodId ?? "pm_fake",
+                    customerId,
+                    paymentMethod.StripePaymentMethodId,
                     chargeAmount,
                     CancellationToken.None);
 
                 if (!chargeResult.Success)
-                    return new Result<UserSubscription, ChangeSubscriptionPlanError>.Failure(
-                        ChangeSubscriptionPlanError.PaymentFailed);
+                    return new Result<UserSubscription, SubscriptionsError>.Failure(
+                        SubscriptionsError.PaymentFailed);
 
                 var record = new PaymentRecord(
                     subscription.Id,
@@ -270,13 +296,31 @@ public class UserSubscriptionCommandService(
                     await mediator.PublishAsync(new BenefitsDisabled(subscription.UserId));
             }
 
-            return new Result<UserSubscription, ChangeSubscriptionPlanError>.Success(subscription);
+            return new Result<UserSubscription, SubscriptionsError>.Success(subscription);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error changing subscription plan for subscription {SubscriptionId}", command.UserSubscriptionId);
-            return new Result<UserSubscription, ChangeSubscriptionPlanError>.Failure(
-                ChangeSubscriptionPlanError.UnexpectedError);
+            return new Result<UserSubscription, SubscriptionsError>.Failure(
+                SubscriptionsError.UnexpectedError);
         }
+    }
+
+    /// <summary>
+    /// Returns the Stripe customer id backing a subscription, creating one (and stamping it on the
+    /// subscription) when missing — e.g. for subscriptions created before customer tracking existed.
+    /// Returns null when Stripe is unavailable / not configured.
+    /// </summary>
+    private async Task<string?> ResolveCustomerIdAsync(UserSubscription subscription, string stripePaymentMethodId)
+    {
+        if (!string.IsNullOrWhiteSpace(subscription.StripeCustomerId))
+            return subscription.StripeCustomerId;
+
+        var customerId = await paymentGateway.EnsureCustomerAsync(
+            subscription.UserId, null, stripePaymentMethodId, CancellationToken.None);
+        if (customerId is not null)
+            subscription.ApplyStripeCustomer(customerId);
+
+        return customerId;
     }
 }

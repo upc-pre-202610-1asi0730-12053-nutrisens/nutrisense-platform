@@ -1,6 +1,6 @@
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Repositories;
-using Nutrisense.Nutrisense.Platform.Subscriptions.Application.Errors;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Errors;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Commands;
@@ -14,7 +14,7 @@ public class PaymentMethodCommandService(
     IUnitOfWork unitOfWork,
     ILogger<PaymentMethodCommandService> logger) : IPaymentMethodCommandService
 {
-    public async Task<Result<PaymentMethod, RegisterPaymentMethodError>> Handle(RegisterPaymentMethodCommand command)
+    public async Task<Result<PaymentMethod, SubscriptionsError>> Handle(RegisterPaymentMethodCommand command)
     {
         try
         {
@@ -25,21 +25,21 @@ public class PaymentMethodCommandService(
             }
             catch (ArgumentException)
             {
-                return new Result<PaymentMethod, RegisterPaymentMethodError>.Failure(
-                    RegisterPaymentMethodError.InvalidCard);
+                return new Result<PaymentMethod, SubscriptionsError>.Failure(
+                    SubscriptionsError.InvalidCard);
             }
 
             var paymentMethod = new PaymentMethod(command);
             await paymentMethodRepository.AddAsync(paymentMethod);
             await unitOfWork.CompleteAsync();
 
-            return new Result<PaymentMethod, RegisterPaymentMethodError>.Success(paymentMethod);
+            return new Result<PaymentMethod, SubscriptionsError>.Success(paymentMethod);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error registering payment method for user {UserId}", command.UserId);
-            return new Result<PaymentMethod, RegisterPaymentMethodError>.Failure(
-                RegisterPaymentMethodError.UnexpectedError);
+            return new Result<PaymentMethod, SubscriptionsError>.Failure(
+                SubscriptionsError.UnexpectedError);
         }
     }
 
