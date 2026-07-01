@@ -52,4 +52,14 @@ public partial class LocationPreference
     {
         HomeCityId = cityId;
     }
+
+    /// <summary>
+    /// Records the user's intent to use location-based recommendations (account-level, persists
+    /// across devices). The runtime ability to read GPS still depends on the browser permission;
+    /// this flag only drives UX decisions such as whether to prompt again.
+    /// </summary>
+    public void SetLocationPermission(bool granted)
+    {
+        LocationPermissionGranted = granted;
+    }
 }
