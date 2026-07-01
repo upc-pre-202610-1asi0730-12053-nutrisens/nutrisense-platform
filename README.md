@@ -131,7 +131,7 @@ Aggregates user data into analytics and exportable reports.
 
 *   **Scope**: Adherence and streak analytics, user analytics aggregation, and PDF report generation.
 *   **Aggregates**: `UserAnalytics`, `UserAnalyticsAudit`
-*   **Domain Services**: `IAdherenceCalculator`, `IStreakCalculator`, `IReportPdfGenerator`
+*   **Domain Services**: `IAdherenceCalculator`, `IStreakCalculator`
 *   **API Endpoints**: `/api/v1/analytics`
 
 ## External Integrations
