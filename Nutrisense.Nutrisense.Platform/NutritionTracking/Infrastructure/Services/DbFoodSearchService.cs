@@ -12,10 +12,10 @@ public class DbFoodSearchService(IFoodRepository foodRepository) : IFoodSearchSe
 {
     public async Task<IEnumerable<FoodSearchResult>> SearchAsync(string query, string lang, CancellationToken ct)
     {
-        // TODO(scan): el matching definitivo (difuso vs exacto, ranking, y comportamiento al no
-        // encontrar match) se resuelve al implementar el scan completo. Es un punto pendiente
-        // explícito ligado a esa tarea, no deuda accidental. Por ahora se reutiliza la búsqueda
-        // por substring sobre el catálogo en BD (IFoodRepository.SearchByNameAsync).
+        // Matching definitivo: IFoodRepository.SearchByNameAsync normaliza la query, filtra por
+        // substring sobre el catálogo en BD y rankea (exacto > prefijo > substring, nombres más
+        // cortos primero), con tope de resultados y lista vacía cuando no hay query/match.
+        // Pendiente futuro (requiere soporte de BD): matching difuso/tolerante a typos (trigram/Levenshtein).
         var matches = await foodRepository.SearchByNameAsync(query, lang, ct);
         return matches.Select(f => new FoodSearchResult(
             f.Id, f.NameEn, f.NameEs,

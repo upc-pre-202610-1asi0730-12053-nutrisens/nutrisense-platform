@@ -13,6 +13,7 @@ using Nutrisense.Nutrisense.Platform.IAM.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.IAM.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.IAM.Domain.Repositories;
 using Nutrisense.Nutrisense.Platform.IAM.Domain.Services;
+using Nutrisense.Nutrisense.Platform.IAM.Infrastructure.Mailing;
 using Nutrisense.Nutrisense.Platform.IAM.Infrastructure.Hashing.BCrypt;
 using Nutrisense.Nutrisense.Platform.IAM.Infrastructure.Persistence.EFC.Repositories;
 using Nutrisense.Nutrisense.Platform.IAM.Infrastructure.Tokens.JWT;
@@ -66,7 +67,7 @@ using Nutrisense.Nutrisense.Platform.ActivityWearable.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Repositories;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Services;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Infrastructure.Calculators;
-using Nutrisense.Nutrisense.Platform.ActivityWearable.Infrastructure.External.GoogleFit;
+using Nutrisense.Nutrisense.Platform.ActivityWearable.Infrastructure.External.GoogleHealth;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Infrastructure.Persistence.EFC.Repositories;
 // SmartRecommendations BC
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.Internal.CommandServices;
@@ -86,7 +87,6 @@ using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Application.CommandServi
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Domain.Repositories;
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Infrastructure.Calculators;
-using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Infrastructure.External.Pdf;
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Infrastructure.Persistence.EFC.Repositories;
 // AnalyticsReporting domain services — aliased to avoid clash with SmartRecommendations
 using AnalyticsServices = Nutrisense.Nutrisense.Platform.AnalyticsReporting.Domain.Services;
@@ -234,6 +234,8 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // IAM Bounded Context
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IHashingService, BCryptHashingService>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<IUserCommandService, UserCommandService>();
@@ -284,7 +286,8 @@ builder.Services.AddHttpClient<GeminiClient>();
 builder.Services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
 builder.Services.AddScoped<IWearableConnectionRepository, WearableConnectionRepository>();
 builder.Services.AddScoped<ICaloricBalanceCalculator, CaloricBalanceCalculator>();
-builder.Services.AddScoped<IWearableSyncProvider, GoogleFitSyncProvider>();
+builder.Services.AddScoped<IActiveCalorieEstimator, MetActiveCalorieEstimator>();
+builder.Services.AddHttpClient<IWearableSyncProvider, GoogleHealthSyncProvider>();
 builder.Services.AddScoped<IActivityLogCommandService, ActivityLogCommandService>();
 builder.Services.AddScoped<IActivityLogQueryService, ActivityLogQueryService>();
 builder.Services.AddScoped<IWearableConnectionCommandService, WearableConnectionCommandService>();
@@ -313,7 +316,6 @@ builder.Services.AddScoped<IRecsEngineQueryService, RecsEngineQueryService>();
 builder.Services.AddScoped<IUserAnalyticsRepository, UserAnalyticsRepository>();
 builder.Services.AddScoped<AnalyticsServices.IAdherenceCalculator, AdherenceCalculator>();
 builder.Services.AddScoped<AnalyticsServices.IStreakCalculator, StreakCalculator>();
-builder.Services.AddScoped<AnalyticsServices.IReportPdfGenerator, PdfReportGenerator>();
 builder.Services.AddScoped<IAnalyticsCommandService, AnalyticsCommandService>();
 builder.Services.AddScoped<IAnalyticsQueryService, AnalyticsQueryService>();
 

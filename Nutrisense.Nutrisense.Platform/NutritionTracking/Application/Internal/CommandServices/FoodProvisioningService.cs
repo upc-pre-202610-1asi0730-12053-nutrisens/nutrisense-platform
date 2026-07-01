@@ -1,4 +1,4 @@
-using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.Errors;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Errors;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Commands;
@@ -65,7 +65,7 @@ public class FoodProvisioningService(
             est.Restrictions.ToArray());
 
         var result = await foodCommandService.Handle(register, ct);
-        if (result is Result<Food, RegisterFoodError>.Success created)
+        if (result is Result<Food, NutritionTrackingError>.Success created)
             return ToProvisioned(created.Value);
 
         // Already cached (DuplicateKey) or could not be registered: fall back to a name lookup.

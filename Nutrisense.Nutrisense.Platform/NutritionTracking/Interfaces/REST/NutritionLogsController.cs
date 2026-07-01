@@ -7,14 +7,13 @@ using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Commands;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST.Transform;
-using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Extensions;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Resources;
 using Swashbuckle.AspNetCore.Annotations;
-using System.Security.Claims;
+using SharedProblemDetailsFactory = Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.ProblemDetails.ProblemDetailsFactory;
 
 namespace Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.REST;
 
-// TODO (IDOR): validate that route {userId} == authenticated user's "sub" claim before serving data.
 [ApiController]
 [Route("api/v1/nutrition-logs")]
 [Tags("Nutrition Logs")]
@@ -28,12 +27,13 @@ public class NutritionLogsController(
     [HttpGet("by-user/{userId:int}")]
     [SwaggerOperation("Get all nutrition log entries for a user on a specific date")]
     [SwaggerResponse(StatusCodes.Status200OK, "Nutrition log entries retrieved successfully.", typeof(NutritionLogResource[]))]
-    [SwaggerResponse(StatusCodes.Status400BadRequest, "The provided date is not in the expected yyyy-MM-dd format.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "The provided date is not in the expected yyyy-MM-dd format.", typeof(ProblemDetails))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
     public async Task<IActionResult> GetByUserAndDate(int userId, [FromQuery] string date)
     {
+        if (userId != this.GetAuthenticatedUserId()) return Forbid();
         if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
-            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
+            return BadRequest(SharedProblemDetailsFactory.Create(StatusCodes.Status400BadRequest, localizer["BadRequestTitle"].Value, localizer["InvalidDateFormat"].Value, HttpContext.Request.Path));
 
         var logs = await queryService.Handle(new GetNutritionLogByUserAndDateQuery(userId, parsedDate));
         return Ok(logs.Select(NutritionLogResourceAssembler.ToResource));
@@ -43,7 +43,7 @@ public class NutritionLogsController(
     [Consumes("application/json")]
     [SwaggerOperation("Update the quantity of an existing nutrition log entry")]
     [SwaggerResponse(StatusCodes.Status200OK, "Entry updated successfully. Returns the updated nutrition log.", typeof(NutritionLogResource))]
-    [SwaggerResponse(StatusCodes.Status400BadRequest, "The provided quantity is not valid.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "The provided quantity is not valid.", typeof(ProblemDetails))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
     [SwaggerResponse(StatusCodes.Status403Forbidden, "You are not allowed to modify this nutrition log entry.", typeof(ProblemDetails))]
     [SwaggerResponse(StatusCodes.Status404NotFound, "The requested nutrition log entry does not exist.", typeof(ProblemDetails))]
@@ -51,18 +51,19 @@ public class NutritionLogsController(
     {
         var command = UpdateNutritionLogEntryCommandAssembler.ToCommand(entryId, resource);
         var result = await commandService.Handle(command);
-        return UpdateNutritionLogEntryResultAssembler.ToActionResult(result, localizer, Request.Path);
+        return NutritionTrackingActionResultAssembler.ToUpdatedActionResult(result, localizer, Request.Path);
     }
 
     [HttpGet("by-user/{userId:int}/daily-summary")]
     [SwaggerOperation("Get the daily macro summary for a user on a specific date")]
     [SwaggerResponse(StatusCodes.Status200OK, "Daily macro summary retrieved successfully.", typeof(DailyMacroSummaryResource))]
-    [SwaggerResponse(StatusCodes.Status400BadRequest, "The provided date is not in the expected yyyy-MM-dd format.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "The provided date is not in the expected yyyy-MM-dd format.", typeof(ProblemDetails))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
     public async Task<IActionResult> GetDailySummary(int userId, [FromQuery] string date)
     {
+        if (userId != this.GetAuthenticatedUserId()) return Forbid();
         if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
-            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
+            return BadRequest(SharedProblemDetailsFactory.Create(StatusCodes.Status400BadRequest, localizer["BadRequestTitle"].Value, localizer["InvalidDateFormat"].Value, HttpContext.Request.Path));
 
         var summary = await queryService.Handle(new GetDailyMacroSummaryQuery(userId, parsedDate));
         return Ok(NutritionLogResourceAssembler.ToSummaryResource(summary));
@@ -71,23 +72,24 @@ public class NutritionLogsController(
     [HttpGet("by-user/{userId:int}/history")]
     [SwaggerOperation("Get nutrition log history for a user with optional date range")]
     [SwaggerResponse(StatusCodes.Status200OK, "Nutrition log history retrieved successfully.", typeof(NutritionLogResource[]))]
-    [SwaggerResponse(StatusCodes.Status400BadRequest, "One of the provided dates is not in the expected yyyy-MM-dd format.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "One of the provided dates is not in the expected yyyy-MM-dd format.", typeof(ProblemDetails))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
     public async Task<IActionResult> GetHistory(
         int userId,
         [FromQuery] string? from = null,
         [FromQuery] string? to = null)
     {
+        if (userId != this.GetAuthenticatedUserId()) return Forbid();
         DateOnly? fromDate = null;
         DateOnly? toDate = null;
 
         if (from is not null && !DateOnly.TryParseExact(from, "yyyy-MM-dd", out var parsedFrom))
-            return BadRequest(new ErrorResponse(localizer["InvalidFromDateFormat"].Value));
+            return BadRequest(SharedProblemDetailsFactory.Create(StatusCodes.Status400BadRequest, localizer["BadRequestTitle"].Value, localizer["InvalidFromDateFormat"].Value, HttpContext.Request.Path));
         else if (from is not null)
             fromDate = DateOnly.ParseExact(from, "yyyy-MM-dd", null);
 
         if (to is not null && !DateOnly.TryParseExact(to, "yyyy-MM-dd", out var parsedTo))
-            return BadRequest(new ErrorResponse(localizer["InvalidToDateFormat"].Value));
+            return BadRequest(SharedProblemDetailsFactory.Create(StatusCodes.Status400BadRequest, localizer["BadRequestTitle"].Value, localizer["InvalidToDateFormat"].Value, HttpContext.Request.Path));
         else if (to is not null)
             toDate = DateOnly.ParseExact(to, "yyyy-MM-dd", null);
 
@@ -103,49 +105,45 @@ public class NutritionLogsController(
     [SwaggerResponse(StatusCodes.Status404NotFound, "The requested nutrition log entry does not exist.", typeof(ProblemDetails))]
     public async Task<IActionResult> DeleteEntry(int entryId)
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                          ?? User.FindFirstValue("sub");
-
-        if (!int.TryParse(userIdClaim, out var authenticatedUserId))
-            return Unauthorized();
-
-        var command = new DeleteNutritionLogEntryCommand(entryId, authenticatedUserId);
+        var command = new DeleteNutritionLogEntryCommand(entryId, this.GetAuthenticatedUserId());
         var result = await commandService.Handle(command);
-        return DeleteNutritionLogEntryResultAssembler.ToActionResult(result, localizer, Request.Path);
+        return NutritionTrackingActionResultAssembler.ToDeletedActionResult(result, localizer, Request.Path);
     }
 
     [HttpPost]
     [Consumes("application/json")]
     [SwaggerOperation("Log a meal to the daily nutrition log")]
     [SwaggerResponse(StatusCodes.Status201Created, "Meal logged successfully. Returns the created nutrition log.", typeof(NutritionLogResource))]
-    [SwaggerResponse(StatusCodes.Status400BadRequest, "The date format, meal type or quantity is not valid.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "The date format, meal type or quantity is not valid.", typeof(ProblemDetails))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
-    [SwaggerResponse(StatusCodes.Status404NotFound, "The referenced food was not found.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The referenced food was not found.", typeof(ProblemDetails))]
     public async Task<IActionResult> LogMeal([FromBody] LogMealResource resource)
     {
+        if (resource.UserId != this.GetAuthenticatedUserId()) return Forbid();
         if (!DateOnly.TryParseExact(resource.Date, "yyyy-MM-dd", out _))
-            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
+            return BadRequest(SharedProblemDetailsFactory.Create(StatusCodes.Status400BadRequest, localizer["BadRequestTitle"].Value, localizer["InvalidDateFormat"].Value, HttpContext.Request.Path));
 
         var command = LogMealCommandAssembler.ToCommand(resource);
         var result = await commandService.Handle(command);
-        return LogMealResultAssembler.ToActionResult(result, localizer);
+        return NutritionTrackingActionResultAssembler.ToCreatedActionResult(result, localizer, Request.Path);
     }
 
     [HttpPost("scan-menu/select")]
     [Consumes("application/json")]
     [SwaggerOperation("Select a menu option and persist it to the nutrition log")]
     [SwaggerResponse(StatusCodes.Status201Created, "Menu option selected and logged successfully. Returns the created nutrition log.", typeof(NutritionLogResource))]
-    [SwaggerResponse(StatusCodes.Status400BadRequest, "The date format or menu selection data is not valid.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "The date format or menu selection data is not valid.", typeof(ProblemDetails))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
-    [SwaggerResponse(StatusCodes.Status404NotFound, "The referenced food was not found.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The referenced food was not found.", typeof(ProblemDetails))]
     public async Task<IActionResult> SelectMenuOption([FromBody] SelectMenuOptionResource resource)
     {
+        if (resource.UserId != this.GetAuthenticatedUserId()) return Forbid();
         if (!DateOnly.TryParseExact(resource.Date, "yyyy-MM-dd", out _))
-            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
+            return BadRequest(SharedProblemDetailsFactory.Create(StatusCodes.Status400BadRequest, localizer["BadRequestTitle"].Value, localizer["InvalidDateFormat"].Value, HttpContext.Request.Path));
 
         var command = SelectMenuOptionCommandAssembler.ToCommand(resource);
         var result = await commandService.Handle(command);
-        return SelectMenuOptionResultAssembler.ToActionResult(result, localizer);
+        return NutritionTrackingActionResultAssembler.ToCreatedActionResult(result, localizer, Request.Path);
     }
 
     [HttpPost("scan-menu")]
@@ -153,29 +151,31 @@ public class NutritionLogsController(
     [SwaggerOperation("Analyze a menu photo and return available options (does not persist)")]
     [SwaggerResponse(StatusCodes.Status200OK, "Menu analyzed successfully. Returns the available options.", typeof(MenuOptionsPreviewResource))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
-    [SwaggerResponse(StatusCodes.Status422UnprocessableEntity, "The menu photo could not be analyzed.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status422UnprocessableEntity, "The menu photo could not be analyzed.", typeof(ProblemDetails))]
     public async Task<IActionResult> ScanMenu([FromBody] ScanPhotoResource resource)
     {
+        if (resource.UserId != this.GetAuthenticatedUserId()) return Forbid();
         var command = new ScanMenuPhotoCommand(resource.UserId, resource.ImageBase64OrUri);
         var result = await commandService.Handle(command);
-        return MenuOptionsPreviewAssembler.ToActionResult(result, localizer);
+        return NutritionTrackingActionResultAssembler.ToMenuPreviewActionResult(result, localizer, Request.Path);
     }
 
     [HttpPost("scan-dish/confirm")]
     [Consumes("application/json")]
     [SwaggerOperation("Confirm and persist a scanned dish to the nutrition log")]
     [SwaggerResponse(StatusCodes.Status201Created, "Scanned dish confirmed and logged successfully. Returns the created nutrition log.", typeof(NutritionLogResource))]
-    [SwaggerResponse(StatusCodes.Status400BadRequest, "The date format or scan confirmation data is not valid.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "The date format or scan confirmation data is not valid.", typeof(ProblemDetails))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
-    [SwaggerResponse(StatusCodes.Status404NotFound, "The referenced food was not found.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The referenced food was not found.", typeof(ProblemDetails))]
     public async Task<IActionResult> ConfirmScan([FromBody] ConfirmScanResource resource)
     {
+        if (resource.UserId != this.GetAuthenticatedUserId()) return Forbid();
         if (!DateOnly.TryParseExact(resource.Date, "yyyy-MM-dd", out _))
-            return BadRequest(new ErrorResponse(localizer["InvalidDateFormat"].Value));
+            return BadRequest(SharedProblemDetailsFactory.Create(StatusCodes.Status400BadRequest, localizer["BadRequestTitle"].Value, localizer["InvalidDateFormat"].Value, HttpContext.Request.Path));
 
         var command = ConfirmScanCommandAssembler.ToCommand(resource);
         var result = await commandService.Handle(command);
-        return ConfirmScanResultAssembler.ToActionResult(result, localizer);
+        return NutritionTrackingActionResultAssembler.ToCreatedActionResult(result, localizer, Request.Path);
     }
 
     [HttpPost("scan-dish")]
@@ -183,11 +183,12 @@ public class NutritionLogsController(
     [SwaggerOperation("Analyze a dish photo and return a preview (does not persist)")]
     [SwaggerResponse(StatusCodes.Status200OK, "Dish analyzed successfully. Returns the scan preview.", typeof(ScanPreviewResource))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
-    [SwaggerResponse(StatusCodes.Status422UnprocessableEntity, "The dish photo could not be analyzed.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status422UnprocessableEntity, "The dish photo could not be analyzed.", typeof(ProblemDetails))]
     public async Task<IActionResult> ScanDish([FromBody] ScanPhotoResource resource)
     {
+        if (resource.UserId != this.GetAuthenticatedUserId()) return Forbid();
         var command = new ScanMealPhotoCommand(resource.UserId, resource.ImageBase64OrUri);
         var result = await commandService.Handle(command);
-        return ScanPreviewResultAssembler.ToActionResult(result, localizer);
+        return NutritionTrackingActionResultAssembler.ToScanPreviewActionResult(result, localizer, Request.Path);
     }
 }

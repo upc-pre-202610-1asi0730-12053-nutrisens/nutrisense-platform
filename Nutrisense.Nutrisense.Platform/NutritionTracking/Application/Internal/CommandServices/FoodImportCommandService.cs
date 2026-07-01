@@ -1,4 +1,4 @@
-using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.Errors;
+using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Errors;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Model.Commands;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Domain.Repositories;
@@ -22,7 +22,7 @@ public class FoodImportCommandService(
     private const int BatchSize = 20;
     private const string Source = "usda";
 
-    public async Task<Result<int, ImportFoodsError>> Handle(ImportFoodsCommand command, CancellationToken ct = default)
+    public async Task<Result<int, NutritionTrackingError>> Handle(ImportFoodsCommand command, CancellationToken ct = default)
     {
         IReadOnlyList<ExternalFoodData> external;
         try
@@ -32,7 +32,7 @@ public class FoodImportCommandService(
         catch (Exception ex)
         {
             logger.LogError(ex, "[FoodImport] USDA search failed for query '{Query}'", command.Query);
-            return new Result<int, ImportFoodsError>.Failure(ImportFoodsError.UsdaUnavailable);
+            return new Result<int, NutritionTrackingError>.Failure(NutritionTrackingError.UsdaUnavailable);
         }
 
         logger.LogInformation("[FoodImport] USDA returned {Count} foods for query '{Query}'", external.Count, command.Query);
@@ -91,12 +91,12 @@ public class FoodImportCommandService(
             }
 
             logger.LogInformation("[FoodImport] Complete: {Total} foods imported for query '{Query}'", imported, command.Query);
-            return new Result<int, ImportFoodsError>.Success(imported);
+            return new Result<int, NutritionTrackingError>.Success(imported);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "[FoodImport] Unexpected error importing query '{Query}'", command.Query);
-            return new Result<int, ImportFoodsError>.Failure(ImportFoodsError.UnexpectedError);
+            return new Result<int, NutritionTrackingError>.Failure(NutritionTrackingError.UnexpectedError);
         }
     }
 }

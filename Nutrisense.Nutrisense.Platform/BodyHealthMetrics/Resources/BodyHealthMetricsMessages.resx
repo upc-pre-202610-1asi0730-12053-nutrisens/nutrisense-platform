@@ -39,4 +39,49 @@
     <data name="InvalidDateOfBirthFormat" xml:space="preserve">
         <value>Invalid date of birth format. Expected yyyy-MM-dd.</value>
     </data>
+    <data name="NoActiveGoal" xml:space="preserve">
+        <value>No active health goal is set for this user.</value>
+    </data>
+    <data name="TdeeNotCalculated" xml:space="preserve">
+        <value>TDEE has not been calculated yet for this user.</value>
+    </data>
+    <data name="UnexpectedError" xml:space="preserve">
+        <value>An unexpected error occurred while processing the request.</value>
+    </data>
+    <data name="BodyMetricsNotFoundTitle" xml:space="preserve">
+        <value>Body Metrics Not Found</value>
+    </data>
+    <data name="BodyMetricsAlreadyExistsTitle" xml:space="preserve">
+        <value>Body Metrics Already Exist</value>
+    </data>
+    <data name="InvalidBodyMetricsDataTitle" xml:space="preserve">
+        <value>Invalid Body Metrics Data</value>
+    </data>
+    <data name="InvalidWeightValueTitle" xml:space="preserve">
+        <value>Invalid Weight Value</value>
+    </data>
+    <data name="InvalidMeasurementValuesTitle" xml:space="preserve">
+        <value>Invalid Measurement Values</value>
+    </data>
+    <data name="InvalidGoalDataTitle" xml:space="preserve">
+        <value>Invalid Goal Data</value>
+    </data>
+    <data name="NoActiveGoalTitle" xml:space="preserve">
+        <value>No Active Goal</value>
+    </data>
+    <data name="TdeeNotCalculatedTitle" xml:space="preserve">
+        <value>TDEE Not Calculated</value>
+    </data>
+    <data name="UnexpectedServerError" xml:space="preserve">
+        <value>Unexpected Server Error</value>
+    </data>
+    <data name="InvalidDateOfBirthFormatTitle" xml:space="preserve">
+        <value>Invalid Date Of Birth Format</value>
+    </data>
+    <data name="BmiNotCalculatedTitle" xml:space="preserve">
+        <value>BMI Not Calculated</value>
+    </data>
+    <data name="DailyCaloricGoalNotCalculatedTitle" xml:space="preserve">
+        <value>Daily Caloric Goal Not Calculated</value>
+    </data>
 </root>

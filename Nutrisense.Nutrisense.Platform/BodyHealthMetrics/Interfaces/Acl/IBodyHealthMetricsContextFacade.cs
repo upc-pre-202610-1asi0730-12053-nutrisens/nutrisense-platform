@@ -24,4 +24,16 @@ public interface IBodyHealthMetricsContextFacade
     /// or null if there is none / on failure.
     /// </summary>
     Task<UserGoalSummaryItem?> GetActiveGoalByUserId(int userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the user's most recent recorded weight in kilograms,
+    /// or null if there is none / on failure.
+    /// </summary>
+    Task<decimal?> GetCurrentWeightKg(int userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the user's computed Total Daily Energy Expenditure (TDEE) in kilocalories,
+    /// or null if it has not been calculated / on failure.
+    /// </summary>
+    Task<decimal?> GetTdee(int userId, CancellationToken ct = default);
 }

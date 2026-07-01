@@ -31,4 +31,30 @@ public class BodyHealthMetricsContextFacade(
             return null;
         }
     }
+
+    public async Task<decimal?> GetCurrentWeightKg(int userId, CancellationToken ct = default)
+    {
+        try
+        {
+            var metrics = await queryService.Handle(new GetBodyMetricsByUserIdQuery(userId));
+            return metrics?.GetCurrentWeightKg();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<decimal?> GetTdee(int userId, CancellationToken ct = default)
+    {
+        try
+        {
+            var metrics = await queryService.Handle(new GetBodyMetricsByUserIdQuery(userId));
+            return metrics?.Tdee;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

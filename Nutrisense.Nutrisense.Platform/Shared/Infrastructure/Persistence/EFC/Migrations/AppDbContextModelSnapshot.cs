@@ -90,9 +90,20 @@ namespace Nutrisense.Nutrisense.Platform.Shared.Infrastructure.Persistence.EFC.M
                         .HasColumnType("int")
                         .HasColumnName("id");
 
+                    b.Property<string>("AccessToken")
+                        .HasMaxLength(2048)
+                        .HasColumnType("varchar(2048)")
+                        .HasColumnName("access_token");
+
                     b.Property<DateTimeOffset>("AuthorizedAt")
                         .HasColumnType("datetime")
                         .HasColumnName("authorized_at");
+
+                    b.Property<bool>("AutoSyncEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("auto_sync_enabled");
 
                     b.Property<DateTimeOffset?>("CreatedAt")
                         .HasColumnType("datetime")
@@ -108,11 +119,20 @@ namespace Nutrisense.Nutrisense.Platform.Shared.Infrastructure.Persistence.EFC.M
                         .HasColumnType("varchar(50)")
                         .HasColumnName("provider");
 
+                    b.Property<string>("RefreshToken")
+                        .HasMaxLength(512)
+                        .HasColumnType("varchar(512)")
+                        .HasColumnName("refresh_token");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)")
                         .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("TokenExpiresAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("token_expires_at");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetime")
@@ -455,6 +475,44 @@ namespace Nutrisense.Nutrisense.Platform.Shared.Infrastructure.Persistence.EFC.M
                         .HasDatabaseName("i_x_weight_logs_user_id");
 
                     b.ToTable("weight_logs", (string)null);
+                });
+
+            modelBuilder.Entity("Nutrisense.Nutrisense.Platform.IAM.Domain.Model.Aggregates.PasswordResetToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("token");
+
+                    b.Property<bool>("Used")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("used");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_password_reset_tokens");
+
+                    b.HasIndex("Token")
+                        .IsUnique()
+                        .HasDatabaseName("ix_password_reset_tokens_token");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_password_reset_tokens_user_id");
+
+                    b.ToTable("password_reset_tokens");
                 });
 
             modelBuilder.Entity("Nutrisense.Nutrisense.Platform.IAM.Domain.Model.Aggregates.User", b =>
@@ -1390,6 +1448,10 @@ namespace Nutrisense.Nutrisense.Platform.Shared.Infrastructure.Persistence.EFC.M
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)")
                         .HasColumnName("status");
+
+                    b.Property<string>("StripeCustomerId")
+                        .HasColumnType("longtext")
+                        .HasColumnName("stripe_customer_id");
 
                     b.Property<string>("StripeSubscriptionId")
                         .HasColumnType("longtext")
