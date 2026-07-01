@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="SubscriptionNotFoundTitle" xml:space="preserve">
+        <value>No encontrado</value>
+    </data>
+    <data name="SubscriptionNotFound" xml:space="preserve">
+        <value>No se encontró la suscripción solicitada.</value>
+    </data>
+    <data name="SubscriptionNotActiveTitle" xml:space="preserve">
+        <value>Solicitud inválida</value>
+    </data>
+    <data name="SubscriptionNotActive" xml:space="preserve">
+        <value>La suscripción no está activa y no puede cancelarse.</value>
+    </data>
+    <data name="PlanNotFoundTitle" xml:space="preserve">
+        <value>No encontrado</value>
+    </data>
+    <data name="PlanNotFound" xml:space="preserve">
+        <value>No se encontró el plan de suscripción solicitado.</value>
+    </data>
+    <data name="SamePlanTitle" xml:space="preserve">
+        <value>Conflicto</value>
+    </data>
+    <data name="SamePlan" xml:space="preserve">
+        <value>La suscripción ya se encuentra en el plan solicitado.</value>
+    </data>
+    <data name="PaymentFailedTitle" xml:space="preserve">
+        <value>Pago requerido</value>
+    </data>
+    <data name="PaymentFailed" xml:space="preserve">
+        <value>No se pudo procesar el pago.</value>
+    </data>
+    <data name="InvalidCardTitle" xml:space="preserve">
+        <value>Solicitud inválida</value>
+    </data>
+    <data name="InvalidCard" xml:space="preserve">
+        <value>Los datos de la tarjeta proporcionados no son válidos.</value>
+    </data>
+    <data name="PaymentMethodNotFoundTitle" xml:space="preserve">
+        <value>No encontrado</value>
+    </data>
+    <data name="PaymentMethodNotFound" xml:space="preserve">
+        <value>No se encontró el método de pago seleccionado.</value>
+    </data>
+    <data name="AlreadySubscribedTitle" xml:space="preserve">
+        <value>Conflicto</value>
+    </data>
+    <data name="AlreadySubscribed" xml:space="preserve">
+        <value>El usuario ya tiene una suscripción activa.</value>
+    </data>
+    <data name="UnexpectedServerError" xml:space="preserve">
+        <value>Error inesperado del servidor</value>
+    </data>
+    <data name="UnexpectedError" xml:space="preserve">
+        <value>Ocurrió un error inesperado al procesar la solicitud.</value>
+    </data>
+</root>

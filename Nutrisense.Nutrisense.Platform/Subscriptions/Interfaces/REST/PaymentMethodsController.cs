@@ -1,20 +1,21 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
-using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
-using Nutrisense.Nutrisense.Platform.Subscriptions.Application.Errors;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Extensions;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Commands;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Errors;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.Subscriptions.Interfaces.REST.Transform;
+using Nutrisense.Nutrisense.Platform.Subscriptions.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Nutrisense.Nutrisense.Platform.Subscriptions.Interfaces.REST;
 
-// TODO (IDOR): validate that route {userId} == authenticated user's "sub" claim before serving data.
 [ApiController]
 [Route("api/v1/payment-methods")]
 [Authorize]
@@ -23,15 +24,17 @@ namespace Nutrisense.Nutrisense.Platform.Subscriptions.Interfaces.REST;
 [Consumes("application/json")]
 public class PaymentMethodsController(
     IPaymentMethodCommandService commandService,
-    IPaymentMethodQueryService queryService) : ControllerBase
+    IPaymentMethodQueryService queryService,
+    IStringLocalizer<SubscriptionsMessages> localizer) : ControllerBase
 {
     [HttpPost]
     [SwaggerOperation(Summary = "Register payment method", Description = "Registers a new payment method for a user. Validates card details via Stripe.")]
     [SwaggerResponse(StatusCodes.Status201Created, "Payment method registered successfully.", typeof(PaymentMethodResource))]
-    [SwaggerResponse(StatusCodes.Status400BadRequest, "The provided card details are not valid.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "The provided card details are not valid.", typeof(ProblemDetails))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
     public async Task<IActionResult> Register([FromBody] RegisterPaymentMethodResource resource)
     {
+        if (resource.UserId != this.GetAuthenticatedUserId()) return Forbid();
         var command = new RegisterPaymentMethodCommand(
             resource.UserId, resource.LastFour, resource.Brand,
             resource.ExpiryMonth, resource.ExpiryYear,
@@ -40,10 +43,10 @@ public class PaymentMethodsController(
         var result = await commandService.Handle(command);
         return result switch
         {
-            Result<PaymentMethod, RegisterPaymentMethodError>.Success s =>
+            Result<PaymentMethod, SubscriptionsError>.Success s =>
                 StatusCode(StatusCodes.Status201Created, PaymentMethodResourceAssembler.ToResource(s.Value)),
-            Result<PaymentMethod, RegisterPaymentMethodError>.Failure { Error: RegisterPaymentMethodError.InvalidCard } =>
-                BadRequest(new ErrorResponse("The provided card details are not valid.")),
+            Result<PaymentMethod, SubscriptionsError>.Failure f =>
+                SubscriptionsActionResultAssembler.ToActionResult(f, localizer, Request.Path),
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
@@ -54,6 +57,7 @@ public class PaymentMethodsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
     public async Task<IActionResult> GetByUser(int userId)
     {
+        if (userId != this.GetAuthenticatedUserId()) return Forbid();
         var methods = await queryService.Handle(new GetPaymentMethodsByUserIdQuery(userId));
         return Ok(methods.Select(PaymentMethodResourceAssembler.ToResource));
     }
