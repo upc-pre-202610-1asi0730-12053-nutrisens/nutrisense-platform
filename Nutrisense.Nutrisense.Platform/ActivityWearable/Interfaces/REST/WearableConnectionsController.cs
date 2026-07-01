@@ -8,11 +8,11 @@ using Nutrisense.Nutrisense.Platform.ActivityWearable.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.ActivityWearable.Resources;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Extensions;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Nutrisense.Nutrisense.Platform.ActivityWearable.Interfaces.REST;
 
-// TODO (IDOR): validate that route {userId} == authenticated user's "sub" claim before serving data.
 [ApiController]
 [Route("api/v1/wearable-connections")]
 [Authorize]
@@ -35,9 +35,12 @@ public class WearableConnectionsController(
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ConnectDevice([FromBody] ConnectDeviceResource resource)
     {
+        if (resource.UserId != this.GetAuthenticatedUserId()) return Forbid();
         var command = WearableConnectionAssembler.ToCommand(resource);
         var result = await commandService.Handle(command);
-        return ConnectDeviceResultAssembler.ToActionResult(result, localizer);
+        return ActivityWearableActionResultAssembler.ToActionResult(result, localizer,
+            connection => new ObjectResult(WearableConnectionAssembler.ToResource(connection)) { StatusCode = StatusCodes.Status201Created },
+            HttpContext.Request.Path);
     }
 
     /// <summary>Returns all wearable connections belonging to a user.</summary>
@@ -48,6 +51,7 @@ public class WearableConnectionsController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByUser(int userId)
     {
+        if (userId != this.GetAuthenticatedUserId()) return Forbid();
         var connections = await queryService.Handle(new GetWearableConnectionsByUserIdQuery(userId));
         return Ok(connections.Select(WearableConnectionAssembler.ToResource));
     }
@@ -62,7 +66,23 @@ public class WearableConnectionsController(
     public async Task<IActionResult> SyncActivityData(int id)
     {
         var result = await commandService.Handle(new SyncActivityDataCommand(id));
-        return SyncActivityResultAssembler.ToActionResult(result, localizer);
+        return ActivityWearableActionResultAssembler.ToActionResult(result, localizer,
+            connection => new OkObjectResult(WearableConnectionAssembler.ToResource(connection)), HttpContext.Request.Path);
+    }
+
+    /// <summary>Enables or disables automatic activity syncing for a wearable connection.</summary>
+    /// <param name="id">Identifier of the wearable connection to update.</param>
+    /// <param name="resource">Payload carrying the desired auto-sync state.</param>
+    /// <returns>200 OK with the updated connection, or 404 Not Found if it does not exist.</returns>
+    [HttpPatch("{id:int}/auto-sync")]
+    [SwaggerOperation("Enable or disable automatic activity sync for a wearable connection")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetAutoSync(int id, [FromBody] SetAutoSyncResource resource)
+    {
+        var result = await commandService.Handle(new SetAutoSyncCommand(id, resource.Enabled));
+        return ActivityWearableActionResultAssembler.ToActionResult(result, localizer,
+            connection => new OkObjectResult(WearableConnectionAssembler.ToResource(connection)), HttpContext.Request.Path);
     }
 
     /// <summary>Disconnects a previously connected wearable device.</summary>
@@ -75,6 +95,7 @@ public class WearableConnectionsController(
     public async Task<IActionResult> DisconnectDevice(int id)
     {
         var result = await commandService.Handle(new DisconnectDeviceCommand(id));
-        return DisconnectDeviceResultAssembler.ToActionResult(result, localizer);
+        return ActivityWearableActionResultAssembler.ToActionResult(result, localizer,
+            _ => NoContent(), HttpContext.Request.Path);
     }
 }
