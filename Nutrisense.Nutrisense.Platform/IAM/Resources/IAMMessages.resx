@@ -39,4 +39,31 @@
     <data name="WeakPassword" xml:space="preserve">
         <value>The password does not meet the security requirements: at least 8 characters, including an uppercase letter, a lowercase letter, a digit and a special character.</value>
     </data>
+    <data name="PasswordResetEmailSent" xml:space="preserve">
+        <value>If that email is registered, you will receive a reset link shortly.</value>
+    </data>
+    <data name="PasswordResetSuccess" xml:space="preserve">
+        <value>Your password has been reset successfully. You can now sign in with your new password.</value>
+    </data>
+    <data name="InvalidResetToken" xml:space="preserve">
+        <value>The reset link is invalid or has already been used.</value>
+    </data>
+    <data name="ResetTokenExpired" xml:space="preserve">
+        <value>The reset link has expired. Please request a new one.</value>
+    </data>
+    <data name="NotFoundTitle" xml:space="preserve">
+        <value>Resource not found</value>
+    </data>
+    <data name="BadRequestTitle" xml:space="preserve">
+        <value>Invalid request</value>
+    </data>
+    <data name="ConflictTitle" xml:space="preserve">
+        <value>Conflict</value>
+    </data>
+    <data name="UnauthorizedTitle" xml:space="preserve">
+        <value>Unauthorized</value>
+    </data>
+    <data name="UnexpectedServerError" xml:space="preserve">
+        <value>Unexpected server error</value>
+    </data>
 </root>

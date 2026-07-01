@@ -39,4 +39,31 @@
     <data name="WeakPassword" xml:space="preserve">
         <value>La contraseña no cumple los requisitos de seguridad: al menos 8 caracteres, incluyendo una mayúscula, una minúscula, un dígito y un carácter especial.</value>
     </data>
+    <data name="PasswordResetEmailSent" xml:space="preserve">
+        <value>Si ese correo está registrado, recibirás un enlace de recuperación en breve.</value>
+    </data>
+    <data name="PasswordResetSuccess" xml:space="preserve">
+        <value>Tu contraseña se restableció correctamente. Ya puedes iniciar sesión con la nueva contraseña.</value>
+    </data>
+    <data name="InvalidResetToken" xml:space="preserve">
+        <value>El enlace de recuperación no es válido o ya fue utilizado.</value>
+    </data>
+    <data name="ResetTokenExpired" xml:space="preserve">
+        <value>El enlace de recuperación ha expirado. Solicita uno nuevo.</value>
+    </data>
+    <data name="NotFoundTitle" xml:space="preserve">
+        <value>Recurso no encontrado</value>
+    </data>
+    <data name="BadRequestTitle" xml:space="preserve">
+        <value>Solicitud inválida</value>
+    </data>
+    <data name="ConflictTitle" xml:space="preserve">
+        <value>Conflicto</value>
+    </data>
+    <data name="UnauthorizedTitle" xml:space="preserve">
+        <value>No autorizado</value>
+    </data>
+    <data name="UnexpectedServerError" xml:space="preserve">
+        <value>Error inesperado del servidor</value>
+    </data>
 </root>
