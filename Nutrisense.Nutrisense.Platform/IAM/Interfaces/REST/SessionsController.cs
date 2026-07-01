@@ -8,13 +8,12 @@ using Nutrisense.Nutrisense.Platform.IAM.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.IAM.Domain.Model.ValueObjects;
 using Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST.Transform;
-using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Extensions;
 using Nutrisense.Nutrisense.Platform.IAM.Resources;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Nutrisense.Nutrisense.Platform.IAM.Interfaces.REST;
 
-// TODO (IDOR): validate that route {userId} == authenticated user's "sub" claim before serving data.
 [ApiController]
 [Route("api/v1/users/{userId:int}/sessions")]
 [Authorize]
@@ -31,6 +30,7 @@ public class SessionsController(
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
     public async Task<IActionResult> GetSessions(int userId)
     {
+        if (userId != this.GetAuthenticatedUserId()) return Forbid();
         var sessions = await queryService.Handle(new GetAllSessionsByUserIdQuery(new UserId(userId)));
         return Ok(sessions.Select(SessionResourceAssembler.ToResource).ToArray());
     }
@@ -39,10 +39,11 @@ public class SessionsController(
     [SwaggerOperation(Summary = "Logout from session", Description = "Terminates a specific session, invalidating its authentication token.")]
     [SwaggerResponse(StatusCodes.Status204NoContent, "Session terminated successfully.")]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
-    [SwaggerResponse(StatusCodes.Status404NotFound, "The requested session does not exist.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "The requested session does not exist.", typeof(ProblemDetails))]
     public async Task<IActionResult> Logout(int userId, int sessionId)
     {
+        if (userId != this.GetAuthenticatedUserId()) return Forbid();
         var result = await commandService.Handle(new LogoutUserCommand(new UserId(userId), sessionId));
-        return LogoutUserResultAssembler.ToActionResult(result, localizer);
+        return IamActionResultAssembler.ToLogoutResult(result, localizer);
     }
 }
