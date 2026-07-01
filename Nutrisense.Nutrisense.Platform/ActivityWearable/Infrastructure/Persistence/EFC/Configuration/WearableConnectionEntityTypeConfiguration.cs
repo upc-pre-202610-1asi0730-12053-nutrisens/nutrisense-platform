@@ -39,6 +39,25 @@ public class WearableConnectionEntityTypeConfiguration : IEntityTypeConfiguratio
             .HasColumnName("authorized_at")
             .IsRequired();
 
+        builder.Property(w => w.AutoSyncEnabled)
+            .HasColumnName("auto_sync_enabled")
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        builder.Property(w => w.AccessToken)
+            .HasColumnName("access_token")
+            .HasMaxLength(2048)
+            .IsRequired(false);
+
+        builder.Property(w => w.RefreshToken)
+            .HasColumnName("refresh_token")
+            .HasMaxLength(512)
+            .IsRequired(false);
+
+        builder.Property(w => w.TokenExpiresAt)
+            .HasColumnName("token_expires_at")
+            .IsRequired(false);
+
         builder.Property(w => w.CreatedAt).HasColumnName("created_at");
         builder.Property(w => w.UpdatedAt).HasColumnName("updated_at");
 
