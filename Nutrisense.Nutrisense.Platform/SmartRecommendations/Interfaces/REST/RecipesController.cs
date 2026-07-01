@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.Errors;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Application.QueryServices;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Commands;
@@ -9,7 +8,7 @@ using Nutrisense.Nutrisense.Platform.SmartRecommendations.Domain.Model.Queries;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Resources;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST.Transform;
 using Nutrisense.Nutrisense.Platform.SmartRecommendations.Resources;
-using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Resources;
+using Nutrisense.Nutrisense.Platform.Shared.Interfaces.REST.Extensions;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST;
@@ -21,7 +20,6 @@ namespace Nutrisense.Nutrisense.Platform.SmartRecommendations.Interfaces.REST;
 public class RecipesController(
     IRecsEngineCommandService commandService,
     IRecsEngineQueryService queryService,
-    IRecipeImportCommandService importService,
     IStringLocalizer<SmartRecommendationsMessages> localizer) : ControllerBase
 {
     [HttpGet]
@@ -45,37 +43,20 @@ public class RecipesController(
         return recipe is null ? NotFound() : Ok(RecipeAssembler.ToResource(recipe));
     }
 
-    // TODO (IDOR): validate that route {userId} == authenticated user's "sub" claim before serving data.
     [HttpPost("suggest/{userId:int}")]
     [Authorize]
     [SwaggerOperation(Summary = "Suggest recipe", Description = "Suggest a recipe for a user based on their goal and pantry.")]
     [SwaggerResponse(StatusCodes.Status200OK, "Recipe suggested successfully.", typeof(RecipeResource))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
-    [SwaggerResponse(StatusCodes.Status422UnprocessableEntity, "A recipe could not be suggested for this user.", typeof(ErrorResponse))]
+    [SwaggerResponse(StatusCodes.Status403Forbidden, "The authenticated user does not match the requested user.")]
+    [SwaggerResponse(StatusCodes.Status422UnprocessableEntity, "A recipe could not be suggested for this user.", typeof(ProblemDetails))]
     public async Task<IActionResult> Suggest(int userId)
     {
+        if (userId != this.GetAuthenticatedUserId()) return Forbid();
+
         var result = await commandService.Handle(new SuggestRecipeCommand(userId));
         return result.Fold(
             recipe => (IActionResult)Ok(RecipeAssembler.ToResource(recipe)),
-            error => UnprocessableEntity(new ErrorResponse(localizer["RecipeSuggestionFailed"].Value)));
-    }
-
-    [HttpPost("import")]
-    [Authorize] // TODO: restrict to admin role once a roles system exists.
-    [Consumes("application/json")]
-    [SwaggerOperation(Summary = "Import AI recipes", Description = "Generate and import recipe suggestions from the ingredient catalog (admin only).")]
-    [SwaggerResponse(StatusCodes.Status200OK, "Recipes generated and imported successfully. Returns the number of generated recipes.")]
-    [SwaggerResponse(StatusCodes.Status400BadRequest, "The recipe import request is not valid.", typeof(ErrorResponse))]
-    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Authentication is required to access this resource.")]
-    [SwaggerResponse(StatusCodes.Status422UnprocessableEntity, "There are not enough ingredients to generate recipes. Import foods first.", typeof(ErrorResponse))]
-    public async Task<IActionResult> Import([FromBody] ImportRecipesResource resource)
-    {
-        var command = new ImportRecipeSuggestionsCommand(resource.GoalTypes, resource.MaxPerGoal);
-        var result = await importService.Handle(command);
-        return result.Fold<IActionResult>(
-            generated => Ok(new { generated }),
-            error => error == RecipeImportError.InsufficientIngredients
-                ? UnprocessableEntity(new ErrorResponse(localizer["InsufficientIngredientsForRecipes"].Value))
-                : BadRequest(new ErrorResponse(localizer["RecipeImportRequestFailed"].Value)));
+            error => SmartRecommendationsActionResultAssembler.ToActionResult(error, localizer, HttpContext.Request.Path));
     }
 }
