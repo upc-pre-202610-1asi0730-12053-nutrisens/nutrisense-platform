@@ -21,6 +21,9 @@
     <data name="LocationPreferencesNotFound" xml:space="preserve">
         <value>No location preferences were found for this user.</value>
     </data>
+    <data name="NotFoundTitle" xml:space="preserve">
+        <value>Not Found</value>
+    </data>
     <data name="LocationDetectionFailed" xml:space="preserve">
         <value>The location could not be detected from the provided coordinates.</value>
     </data>
@@ -47,5 +50,8 @@
     </data>
     <data name="RecommendationGenerationFailed" xml:space="preserve">
         <value>A recommendation could not be generated for the given trigger.</value>
+    </data>
+    <data name="UnexpectedError" xml:space="preserve">
+        <value>An unexpected error occurred while processing the request.</value>
     </data>
 </root>

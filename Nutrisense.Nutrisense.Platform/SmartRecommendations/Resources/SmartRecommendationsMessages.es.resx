@@ -21,6 +21,9 @@
     <data name="LocationPreferencesNotFound" xml:space="preserve">
         <value>No se encontraron preferencias de ubicación para este usuario.</value>
     </data>
+    <data name="NotFoundTitle" xml:space="preserve">
+        <value>No encontrado</value>
+    </data>
     <data name="LocationDetectionFailed" xml:space="preserve">
         <value>No se pudo detectar la ubicación a partir de las coordenadas proporcionadas.</value>
     </data>
@@ -47,5 +50,8 @@
     </data>
     <data name="RecommendationGenerationFailed" xml:space="preserve">
         <value>No se pudo generar una recomendación para el disparador indicado.</value>
+    </data>
+    <data name="UnexpectedError" xml:space="preserve">
+        <value>Ocurrió un error inesperado al procesar la solicitud.</value>
     </data>
 </root>
