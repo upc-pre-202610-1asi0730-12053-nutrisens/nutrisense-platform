@@ -1,8 +1,8 @@
 using Cortex.Mediator;
-using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Application.Errors;
 using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Domain.Model.Commands;
+using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Domain.Model.Errors;
 using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Domain.Model.Events;
 using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Domain.Repositories;
 using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Domain.Services;
@@ -20,12 +20,12 @@ public class BodyMetricsCommandService(
     ILogger<BodyMetricsCommandService> logger,
     IMediator mediator) : IBodyMetricsCommandService
 {
-    public async Task<Result<BodyMetrics, RegisterBodyMetricsError>> Handle(RegisterBodyMetricsCommand command)
+    public async Task<Result<BodyMetrics, BodyHealthMetricsError>> Handle(RegisterBodyMetricsCommand command)
     {
         try
         {
             if (await bodyMetricsRepository.FindByUserIdAsync(command.UserId) is not null)
-                return new Result<BodyMetrics, RegisterBodyMetricsError>.Failure(RegisterBodyMetricsError.AlreadyExists);
+                return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.BodyMetricsAlreadyExists);
 
             BodyMetrics bodyMetrics;
             try
@@ -34,7 +34,7 @@ public class BodyMetricsCommandService(
             }
             catch (ArgumentException)
             {
-                return new Result<BodyMetrics, RegisterBodyMetricsError>.Failure(RegisterBodyMetricsError.InvalidData);
+                return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.InvalidBodyMetricsData);
             }
 
             await bodyMetricsRepository.AddAsync(bodyMetrics);
@@ -44,22 +44,22 @@ public class BodyMetricsCommandService(
             // Saga: BodyMetricsRegistered → BMI → BMR → TDEE → DailyCaloricGoal
             await RunCalculationChain(bodyMetrics, command);
 
-            return new Result<BodyMetrics, RegisterBodyMetricsError>.Success(bodyMetrics);
+            return new Result<BodyMetrics, BodyHealthMetricsError>.Success(bodyMetrics);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error registering body metrics for user {UserId}", command.UserId);
-            return new Result<BodyMetrics, RegisterBodyMetricsError>.Failure(RegisterBodyMetricsError.UnexpectedError);
+            return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.UnexpectedError);
         }
     }
 
-    public async Task<Result<BodyMetrics, UpdateWeightError>> Handle(UpdateWeightCommand command)
+    public async Task<Result<BodyMetrics, BodyHealthMetricsError>> Handle(UpdateWeightCommand command)
     {
         try
         {
             var bodyMetrics = await bodyMetricsRepository.FindByUserIdAsync(command.UserId);
             if (bodyMetrics is null)
-                return new Result<BodyMetrics, UpdateWeightError>.Failure(UpdateWeightError.BodyMetricsNotFound);
+                return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.BodyMetricsNotFound);
 
             try
             {
@@ -67,7 +67,7 @@ public class BodyMetricsCommandService(
             }
             catch (ArgumentException)
             {
-                return new Result<BodyMetrics, UpdateWeightError>.Failure(UpdateWeightError.InvalidData);
+                return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.InvalidWeightValue);
             }
 
             bodyMetricsRepository.Update(bodyMetrics);
@@ -85,22 +85,22 @@ public class BodyMetricsCommandService(
                 await mediator.PublishAsync(new BmiCalculated(command.UserId, bmi.Value));
             }
 
-            return new Result<BodyMetrics, UpdateWeightError>.Success(bodyMetrics);
+            return new Result<BodyMetrics, BodyHealthMetricsError>.Success(bodyMetrics);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error updating weight for user {UserId}", command.UserId);
-            return new Result<BodyMetrics, UpdateWeightError>.Failure(UpdateWeightError.UnexpectedError);
+            return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.UnexpectedError);
         }
     }
 
-    public async Task<Result<BodyMetrics, RegisterBodyMeasurementError>> Handle(RegisterBodyMeasurementCommand command)
+    public async Task<Result<BodyMetrics, BodyHealthMetricsError>> Handle(RegisterBodyMeasurementCommand command)
     {
         try
         {
             var bodyMetrics = await bodyMetricsRepository.FindByUserIdAsync(command.UserId);
             if (bodyMetrics is null)
-                return new Result<BodyMetrics, RegisterBodyMeasurementError>.Failure(RegisterBodyMeasurementError.BodyMetricsNotFound);
+                return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.BodyMetricsNotFound);
 
             try
             {
@@ -108,28 +108,28 @@ public class BodyMetricsCommandService(
             }
             catch (ArgumentException)
             {
-                return new Result<BodyMetrics, RegisterBodyMeasurementError>.Failure(RegisterBodyMeasurementError.InvalidData);
+                return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.InvalidMeasurementValues);
             }
 
             bodyMetricsRepository.Update(bodyMetrics);
             await unitOfWork.CompleteAsync();
 
-            return new Result<BodyMetrics, RegisterBodyMeasurementError>.Success(bodyMetrics);
+            return new Result<BodyMetrics, BodyHealthMetricsError>.Success(bodyMetrics);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error registering body measurement for user {UserId}", command.UserId);
-            return new Result<BodyMetrics, RegisterBodyMeasurementError>.Failure(RegisterBodyMeasurementError.UnexpectedError);
+            return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.UnexpectedError);
         }
     }
 
-    public async Task<Result<BodyMetrics, SetHealthGoalError>> Handle(SetHealthGoalCommand command)
+    public async Task<Result<BodyMetrics, BodyHealthMetricsError>> Handle(SetHealthGoalCommand command)
     {
         try
         {
             var bodyMetrics = await bodyMetricsRepository.FindByUserIdAsync(command.UserId);
             if (bodyMetrics is null)
-                return new Result<BodyMetrics, SetHealthGoalError>.Failure(SetHealthGoalError.BodyMetricsNotFound);
+                return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.BodyMetricsNotFound);
 
             try
             {
@@ -137,7 +137,7 @@ public class BodyMetricsCommandService(
             }
             catch (ArgumentException)
             {
-                return new Result<BodyMetrics, SetHealthGoalError>.Failure(SetHealthGoalError.InvalidData);
+                return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.InvalidGoalData);
             }
 
             bodyMetricsRepository.Update(bodyMetrics);
@@ -159,29 +159,29 @@ public class BodyMetricsCommandService(
                 }
             }
 
-            return new Result<BodyMetrics, SetHealthGoalError>.Success(bodyMetrics);
+            return new Result<BodyMetrics, BodyHealthMetricsError>.Success(bodyMetrics);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error setting health goal for user {UserId}", command.UserId);
-            return new Result<BodyMetrics, SetHealthGoalError>.Failure(SetHealthGoalError.UnexpectedError);
+            return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.UnexpectedError);
         }
     }
 
-    public async Task<Result<BodyMetrics, CalculateDailyCaloricGoalError>> Handle(CalculateDailyCaloricGoalCommand command)
+    public async Task<Result<BodyMetrics, BodyHealthMetricsError>> Handle(CalculateDailyCaloricGoalCommand command)
     {
         try
         {
             var bodyMetrics = await bodyMetricsRepository.FindByUserIdAsync(command.UserId);
             if (bodyMetrics is null)
-                return new Result<BodyMetrics, CalculateDailyCaloricGoalError>.Failure(CalculateDailyCaloricGoalError.BodyMetricsNotFound);
+                return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.BodyMetricsNotFound);
 
             var activeGoal = bodyMetrics.GetActiveGoal();
             if (activeGoal is null)
-                return new Result<BodyMetrics, CalculateDailyCaloricGoalError>.Failure(CalculateDailyCaloricGoalError.NoActiveGoal);
+                return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.NoActiveGoal);
 
             if (!bodyMetrics.Tdee.HasValue)
-                return new Result<BodyMetrics, CalculateDailyCaloricGoalError>.Failure(CalculateDailyCaloricGoalError.TdeeNotCalculated);
+                return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.TdeeNotCalculated);
 
             var adjustment = calculator.CalculateCaloricAdjustment(activeGoal.Goal.Value, activeGoal.WeeklyRateKg.Value);
             var macros = calculator.CalculateDailyCaloricGoal(bodyMetrics.Tdee.Value, activeGoal.Goal.Value, activeGoal.WeeklyRateKg.Value);
@@ -191,12 +191,12 @@ public class BodyMetricsCommandService(
             await unitOfWork.CompleteAsync();
             await mediator.PublishAsync(new DailyCaloricGoalSet(command.UserId, macros.Calories, macros.ProteinG, macros.CarbsG, macros.FatG, macros.FiberG));
 
-            return new Result<BodyMetrics, CalculateDailyCaloricGoalError>.Success(bodyMetrics);
+            return new Result<BodyMetrics, BodyHealthMetricsError>.Success(bodyMetrics);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error calculating daily caloric goal for user {UserId}", command.UserId);
-            return new Result<BodyMetrics, CalculateDailyCaloricGoalError>.Failure(CalculateDailyCaloricGoalError.UnexpectedError);
+            return new Result<BodyMetrics, BodyHealthMetricsError>.Failure(BodyHealthMetricsError.UnexpectedError);
         }
     }
 
