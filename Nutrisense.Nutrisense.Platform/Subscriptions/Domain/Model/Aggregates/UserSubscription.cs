@@ -18,6 +18,7 @@ public partial class UserSubscription
     public DateTimeOffset PeriodEnd { get; private set; }
     public bool CancelAtPeriodEnd { get; private set; }
     public string? StripeSubscriptionId { get; private set; }
+    public string? StripeCustomerId { get; private set; }
     public DateTimeOffset? LastPlanChangeAt { get; private set; }
     public int? PaymentMethodId { get; private set; }
 
@@ -44,6 +45,12 @@ public partial class UserSubscription
     {
         _paymentRecords.Add(record);
         Status = "active";
+    }
+
+    /// <summary>Records the Stripe customer id backing this subscription's recurring charges.</summary>
+    public void ApplyStripeCustomer(string stripeCustomerId)
+    {
+        StripeCustomerId = stripeCustomerId;
     }
 
     public void ApplyActivation()
