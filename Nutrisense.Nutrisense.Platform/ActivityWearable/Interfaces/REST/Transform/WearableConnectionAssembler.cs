@@ -18,5 +18,5 @@ public static class WearableConnectionAssembler
     /// <returns>The equivalent <see cref="WearableConnectionResource"/>.</returns>
     public static WearableConnectionResource ToResource(WearableConnection connection) =>
         new(connection.Id, connection.UserId, connection.Provider, connection.Status,
-            connection.LastSyncedAt, connection.AuthorizedAt);
+            connection.LastSyncedAt, connection.AuthorizedAt, connection.AutoSyncEnabled);
 }
