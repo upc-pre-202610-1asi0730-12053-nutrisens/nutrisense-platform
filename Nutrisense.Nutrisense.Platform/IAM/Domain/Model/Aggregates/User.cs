@@ -75,6 +75,17 @@ public partial class User
             DietaryRestrictions.Add(new DietaryRestriction(Id, restriction));
     }
 
+    /// <summary>
+    /// Replaces the stored password hash. The caller is responsible for hashing
+    /// the new plaintext password (see <c>IHashingService</c>).
+    /// </summary>
+    public void ChangePassword(string newPasswordHash)
+    {
+        if (string.IsNullOrWhiteSpace(newPasswordHash))
+            throw new ArgumentException("Password hash cannot be empty.", nameof(newPasswordHash));
+        PasswordHash = newPasswordHash;
+    }
+
     public UserSession AddSession(string? deviceLabel)
     {
         var session = new UserSession(Id, deviceLabel ?? "Unknown Device");
