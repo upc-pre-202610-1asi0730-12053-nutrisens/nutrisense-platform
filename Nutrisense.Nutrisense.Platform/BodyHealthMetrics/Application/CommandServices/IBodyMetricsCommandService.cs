@@ -1,6 +1,6 @@
-using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Application.Errors;
 using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Domain.Model.Commands;
+using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Domain.Model.Errors;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 
 namespace Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Application.CommandServices;
@@ -8,9 +8,9 @@ namespace Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Application.CommandSe
 /// <summary>Application service contract for all body-metrics write operations.</summary>
 public interface IBodyMetricsCommandService
 {
-    Task<Result<BodyMetrics, RegisterBodyMetricsError>> Handle(RegisterBodyMetricsCommand command);
-    Task<Result<BodyMetrics, UpdateWeightError>> Handle(UpdateWeightCommand command);
-    Task<Result<BodyMetrics, RegisterBodyMeasurementError>> Handle(RegisterBodyMeasurementCommand command);
-    Task<Result<BodyMetrics, SetHealthGoalError>> Handle(SetHealthGoalCommand command);
-    Task<Result<BodyMetrics, CalculateDailyCaloricGoalError>> Handle(CalculateDailyCaloricGoalCommand command);
+    Task<Result<BodyMetrics, BodyHealthMetricsError>> Handle(RegisterBodyMetricsCommand command);
+    Task<Result<BodyMetrics, BodyHealthMetricsError>> Handle(UpdateWeightCommand command);
+    Task<Result<BodyMetrics, BodyHealthMetricsError>> Handle(RegisterBodyMeasurementCommand command);
+    Task<Result<BodyMetrics, BodyHealthMetricsError>> Handle(SetHealthGoalCommand command);
+    Task<Result<BodyMetrics, BodyHealthMetricsError>> Handle(CalculateDailyCaloricGoalCommand command);
 }

@@ -39,4 +39,49 @@
     <data name="InvalidDateOfBirthFormat" xml:space="preserve">
         <value>El formato de la fecha de nacimiento no es válido. Use yyyy-MM-dd.</value>
     </data>
+    <data name="NoActiveGoal" xml:space="preserve">
+        <value>No hay un objetivo de salud activo para este usuario.</value>
+    </data>
+    <data name="TdeeNotCalculated" xml:space="preserve">
+        <value>El TDEE aún no ha sido calculado para este usuario.</value>
+    </data>
+    <data name="UnexpectedError" xml:space="preserve">
+        <value>Ocurrió un error inesperado al procesar la solicitud.</value>
+    </data>
+    <data name="BodyMetricsNotFoundTitle" xml:space="preserve">
+        <value>Métricas Corporales No Encontradas</value>
+    </data>
+    <data name="BodyMetricsAlreadyExistsTitle" xml:space="preserve">
+        <value>Métricas Corporales Ya Existentes</value>
+    </data>
+    <data name="InvalidBodyMetricsDataTitle" xml:space="preserve">
+        <value>Datos de Métricas Corporales Inválidos</value>
+    </data>
+    <data name="InvalidWeightValueTitle" xml:space="preserve">
+        <value>Valor de Peso Inválido</value>
+    </data>
+    <data name="InvalidMeasurementValuesTitle" xml:space="preserve">
+        <value>Valores de Medición Inválidos</value>
+    </data>
+    <data name="InvalidGoalDataTitle" xml:space="preserve">
+        <value>Datos de Objetivo Inválidos</value>
+    </data>
+    <data name="NoActiveGoalTitle" xml:space="preserve">
+        <value>Sin Objetivo Activo</value>
+    </data>
+    <data name="TdeeNotCalculatedTitle" xml:space="preserve">
+        <value>TDEE No Calculado</value>
+    </data>
+    <data name="UnexpectedServerError" xml:space="preserve">
+        <value>Error Inesperado del Servidor</value>
+    </data>
+    <data name="InvalidDateOfBirthFormatTitle" xml:space="preserve">
+        <value>Formato de Fecha de Nacimiento Inválido</value>
+    </data>
+    <data name="BmiNotCalculatedTitle" xml:space="preserve">
+        <value>IMC No Calculado</value>
+    </data>
+    <data name="DailyCaloricGoalNotCalculatedTitle" xml:space="preserve">
+        <value>Objetivo Calórico Diario No Calculado</value>
+    </data>
 </root>

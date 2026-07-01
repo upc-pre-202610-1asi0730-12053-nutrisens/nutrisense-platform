@@ -15,6 +15,9 @@
     <data name="InvalidDateFormat" xml:space="preserve">
         <value>El formato de fecha no es válido. Use yyyy-MM-dd.</value>
     </data>
+    <data name="BadRequestTitle" xml:space="preserve">
+        <value>Solicitud incorrecta</value>
+    </data>
     <data name="InvalidDateRange" xml:space="preserve">
         <value>El rango de fechas proporcionado no es válido.</value>
     </data>
@@ -23,5 +26,8 @@
     </data>
     <data name="UnexpectedErrorProcessingRequest" xml:space="preserve">
         <value>Ocurrió un error inesperado al procesar su solicitud.</value>
+    </data>
+    <data name="UnexpectedServerError" xml:space="preserve">
+        <value>Ocurrió un error inesperado en el servidor.</value>
     </data>
 </root>

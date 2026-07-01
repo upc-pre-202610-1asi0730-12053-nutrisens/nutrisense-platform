@@ -1,9 +1,9 @@
 using Cortex.Mediator;
-using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Application.Errors;
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Application.CommandServices;
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Domain.Model.Aggregates;
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Domain.Model.Commands;
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Domain.Model.Entities;
+using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Domain.Model.Errors;
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Domain.Model.Events;
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Domain.Model.ValueObjects;
 using Nutrisense.Nutrisense.Platform.AnalyticsReporting.Domain.Repositories;
@@ -13,7 +13,6 @@ using Nutrisense.Nutrisense.Platform.BodyHealthMetrics.Interfaces.Acl;
 using Nutrisense.Nutrisense.Platform.NutritionTracking.Interfaces.Acl;
 using Nutrisense.Nutrisense.Platform.Shared.Application.Patterns;
 using Nutrisense.Nutrisense.Platform.Shared.Domain.Repositories;
-using Nutrisense.Nutrisense.Platform.Shared.Domain.Services;
 
 namespace Nutrisense.Nutrisense.Platform.AnalyticsReporting.Application.Internal.CommandServices;
 
@@ -26,11 +25,9 @@ public class AnalyticsCommandService(
     IBodyHealthMetricsContextFacade bodyHealthMetricsFacade,
     IActivityWearableContextFacade activityWearableFacade,
     IAdherenceCalculator adherenceCalculator,
-    ISubscriptionTierLookup subscriptionTierLookup,
-    IReportPdfGenerator reportPdfGenerator,
     ILogger<AnalyticsCommandService> logger) : IAnalyticsCommandService
 {
-    public async Task<Result<bool, GenerateProgressInsightsError>> Handle(
+    public async Task<Result<bool, AnalyticsReportingError>> Handle(
         GenerateProgressInsightsCommand command, CancellationToken ct = default)
     {
         try
@@ -87,58 +84,27 @@ public class AnalyticsCommandService(
             await mediator.PublishAsync(new ProgressCalculated(command.UserId, adherenceScore));
             await mediator.PublishAsync(new VisualizationGenerated(command.UserId));
 
-            return new Result<bool, GenerateProgressInsightsError>.Success(true);
+            return new Result<bool, AnalyticsReportingError>.Success(true);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unexpected error generating progress insights for user {UserId}", command.UserId);
-            return new Result<bool, GenerateProgressInsightsError>.Failure(GenerateProgressInsightsError.UnexpectedError);
+            return new Result<bool, AnalyticsReportingError>.Failure(AnalyticsReportingError.UnexpectedError);
         }
     }
 
-    public async Task<Result<bool, ViewDashboardError>> Handle(
+    public async Task<Result<bool, AnalyticsReportingError>> Handle(
         ViewDashboardCommand command, CancellationToken ct = default)
     {
         try
         {
             await mediator.PublishAsync(new DashboardViewed(command.UserId));
-            return new Result<bool, ViewDashboardError>.Success(true);
+            return new Result<bool, AnalyticsReportingError>.Success(true);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unexpected error viewing dashboard for user {UserId}", command.UserId);
-            return new Result<bool, ViewDashboardError>.Failure(ViewDashboardError.UnexpectedError);
-        }
-    }
-
-    public async Task<Result<(byte[] Pdf, string FileName), ExportReportPdfError>> Handle(
-        ExportReportPdfCommand command, CancellationToken ct = default)
-    {
-        var isPremium = await subscriptionTierLookup.IsPremiumAsync(command.UserId, ct);
-        if (!isPremium)
-            return new Result<(byte[], string), ExportReportPdfError>.Failure(ExportReportPdfError.PremiumRequired);
-
-        DateRange range;
-        try
-        {
-            range = new DateRange(command.From, command.To);
-        }
-        catch (ArgumentException)
-        {
-            return new Result<(byte[], string), ExportReportPdfError>.Failure(ExportReportPdfError.InvalidDateRange);
-        }
-
-        try
-        {
-            var pdf = await reportPdfGenerator.GenerateAsync(command.UserId, range, ct);
-            var fileName = $"nutrisense-report-{command.UserId}-{command.From:yyyyMMdd}-{command.To:yyyyMMdd}.pdf";
-            await mediator.PublishAsync(new ReportExported(command.UserId, fileName));
-            return new Result<(byte[], string), ExportReportPdfError>.Success((pdf, fileName));
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unexpected error exporting PDF report for user {UserId}", command.UserId);
-            return new Result<(byte[], string), ExportReportPdfError>.Failure(ExportReportPdfError.UnexpectedError);
+            return new Result<bool, AnalyticsReportingError>.Failure(AnalyticsReportingError.UnexpectedError);
         }
     }
 
